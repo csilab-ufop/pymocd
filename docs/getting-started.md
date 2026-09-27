@@ -11,7 +11,7 @@ pip install pymocd
 To build from source you need a Rust toolchain and [maturin](https://www.maturin.rs/):
 
 ```bash
-git clone https://github.com/oliveira-sh/pymocd
+git clone https://github.com/csilab-ufop/pymocd
 cd pymocd
 make build
 ```

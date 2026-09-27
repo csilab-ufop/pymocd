@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![PyPI Publish](https://github.com/oliveira-sh/pymocd/actions/workflows/release.yml/badge.svg)](https://github.com/oliveira-sh/pymocd/actions/workflows/release.yml)![Rust Compilation](https://img.shields.io/github/actions/workflow/status/oliveira-sh/pymocd/rust.yml)
+[![PyPI Publish](https://github.com/csilab-ufop/pymocd/actions/workflows/release.yml/badge.svg)](https://github.com/csilab-ufop/pymocd/actions/workflows/release.yml)![Rust Compilation](https://img.shields.io/github/actions/workflow/status/csilab-ufop/pymocd/rust.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/pymocd)
 ![PyPI - License](https://img.shields.io/pypi/l/pymocd)
 
@@ -17,7 +17,7 @@ speed advantage over pure-Python implementations while staying a drop-in for
 the **NetworkX** / **igraph** ecosystem, making it well-suited to large-scale
 graphs.
 
-**Read the [Documentation](https://pymocd.guiolvr.com/) for detailed
+**Read the [Documentation](https://csilab.ufop.br/pymocd/) for detailed
 guidance and usage instructions.**
 
 ---
