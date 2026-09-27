@@ -16,7 +16,7 @@ four did not.
 |---|---|---|---|---|
 | [`rimpso`](api/detectors.md#pymocd.rimpso) | **RIMPSO** — Santos, *in prep.* (2026) | exact Constant Potts split into cut fraction + pair coverage — the front *is* the resolution profile; memetic particle swarm niched along a geometric resolution ladder, with decomposition-based archive truncation | best-fitting degree-corrected assortative block model, Schwarz-penalised (front via [`rimpso_fronts`](api/fronts.md#pymocd.rimpso_fronts)) | **this library** |
 | [`hpmocd`](api/detectors.md#pymocd.hpmocd) | **HP-MOCD** — [Santos et al., *SNAM* 2025](https://doi.org/10.1007/s13278-025-01519-7) | decomposed modularity (intra, inter), parallel NSGA-II | max modularity *Q* (front via [`hpmocd_fronts`](api/fronts.md#pymocd.hpmocd_fronts)) | **this library** |
-| [`cdrme`](api/detectors.md#pymocd.cdrme) | **CDRME** — [Dabaghi-Zarandi et al., *JNCA* 2025](https://doi.org/10.1016/j.jnca.2024.104070) | softmax-weighted random walks build a primary community set; stochastic agglomerative merge chains optimise the paper's Eq. (12) linkage scalar — a single objective, so there is no front | max modularity *Q* | a private Python notebook supplied by the authors — **no public repository exists**, so it is vendored in this repository at [`res/original_algs/cdrme`](https://github.com/oliveira-sh/pymocd/tree/master/res/original_algs/cdrme) |
+| [`cdrme`](api/detectors.md#pymocd.cdrme) | **CDRME** — [Dabaghi-Zarandi et al., *JNCA* 2025](https://doi.org/10.1016/j.jnca.2024.104070) | softmax-weighted random walks build a primary community set; stochastic agglomerative merge chains optimise the paper's Eq. (12) linkage scalar — a single objective, so there is no front | max modularity *Q* | a private Python notebook supplied by the authors — **no public repository exists**, so it is vendored in this repository at [`res/original_algs/cdrme`](https://github.com/csilab-ufop/pymocd/tree/master/res/original_algs/cdrme) |
 | [`mmcomo`](api/detectors.md#pymocd.mmcomo) | **MMCoMO** — [Zhang et al., *IEEE CIM* 2023](https://ieeexplore.ieee.org/document/10188453) | kernel *k*-means + ratio cut, macro/micro co-evolutionary NSGA-II over a dense diffusion kernel | max *Q* (front via [`mmcomo_fronts`](api/fronts.md#pymocd.mmcomo_fronts)) | — |
 | [`ccm`](api/detectors.md#pymocd.ccm) | **CCM** — [Shaik et al., *SN Computer Science* 2021](https://doi.org/10.1007/s42979-020-00382-x) | community score + community fitness + modularity, NSGA-III | max *Q* (front via [`ccm_fronts`](api/fronts.md#pymocd.ccm_fronts)) | — |
 | [`krm`](api/detectors.md#pymocd.krm) | **KRM** — [Shaik et al., *SN Computer Science* 2021](https://doi.org/10.1007/s42979-020-00382-x) | kernel *k*-means + ratio cut + modularity, NSGA-III | max *Q* (front via [`krm_fronts`](api/fronts.md#pymocd.krm_fronts)) | — |
@@ -30,16 +30,16 @@ isolated nodes are assigned community `-1`.
 
 Each one has a module README carrying its full derivation, its parameter table
 and every deliberate divergence from its paper:
-[`rimpso`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/rimpso/README.md) ·
-[`hpmocd`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/hpmocd/README.md) ·
-[`cdrme`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/cdrme/README.md) ·
-[`mmcomo`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/mmcomo/README.md) ·
-[`ccm`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/ccm/README.md) ·
-[`krm`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/krm/README.md) ·
-[`gdpso`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/gdpso/README.md) ·
-[`mocd`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/mocd/README.md) (Shi-MOCD) ·
-[`moganet`](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/moganet/README.md) ·
-[index](https://github.com/oliveira-sh/pymocd/blob/master/src/core/algorithms/README.md).
+[`rimpso`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/rimpso/README.md) ·
+[`hpmocd`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/hpmocd/README.md) ·
+[`cdrme`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/cdrme/README.md) ·
+[`mmcomo`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/mmcomo/README.md) ·
+[`ccm`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/ccm/README.md) ·
+[`krm`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/krm/README.md) ·
+[`gdpso`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/gdpso/README.md) ·
+[`mocd`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/mocd/README.md) (Shi-MOCD) ·
+[`moganet`](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/moganet/README.md) ·
+[index](https://github.com/csilab-ufop/pymocd/blob/master/src/core/algorithms/README.md).
 
 ## Which one should I use?
 
