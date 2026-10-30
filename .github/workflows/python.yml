@@ -13,11 +13,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10'
-          activate-environment: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -27,8 +29,8 @@ jobs:
 
       - name: Dependencies
         run: |
-          uv pip install networkx python-igraph
-          uv pip install .
+          uv pip install --system networkx python-igraph
+          uv pip install --system .
 
       - name: unittest
         working-directory: tests

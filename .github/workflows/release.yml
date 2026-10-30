@@ -26,17 +26,19 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv with Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-          activate-environment: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install build dependencies
-        run: uv pip install maturin
+        run: uv pip install --system maturin
 
       # This step is necessary for macOS arm64 builds
       - name: Set up Rust target for macOS arm64

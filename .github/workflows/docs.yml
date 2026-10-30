@@ -23,11 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.12"
-          activate-environment: true
           enable-cache: true
           cache-dependency-glob: docs/requirements.txt
 
@@ -40,7 +43,7 @@ jobs:
         run: cargo run --bin stub_gen
 
       - name: Install docs dependencies
-        run: uv pip install -r docs/requirements.txt
+        run: uv pip install --system -r docs/requirements.txt
 
       - name: Build site
         run: mkdocs build --strict
