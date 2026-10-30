@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  PYTHON_VERSION: "3.10"
 
 jobs:
   # Build wheels for each OS in parallel
@@ -27,19 +26,17 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - name: Set up uv with Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          activate-environment: true
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install maturin wheel
+        run: uv pip install maturin
 
       # This step is necessary for macOS arm64 builds
       - name: Set up Rust target for macOS arm64
@@ -100,19 +97,11 @@ jobs:
       - name: List distribution files
         run: ls -l dist/
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install twine
-        run: |
-          python -m pip install --upgrade pip
-          pip install twine
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Publish to PyPI
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          twine upload --skip-existing dist/*
+          uv publish --check-url https://pypi.org/simple/ dist/*
