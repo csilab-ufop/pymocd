@@ -36,6 +36,7 @@ use pyo3::prelude::*;
 mod api;
 pub mod core;
 use api::detectors::*;
+use api::generators::*;
 use api::max_cores;
 use api::metrics::*;
 
@@ -89,6 +90,9 @@ fn pymocd(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ami_fn, m)?)?;
     m.add_function(wrap_pyfunction!(ari_fn, m)?)?;
     m.add_function(wrap_pyfunction!(f1_fn, m)?)?;
+
+    // benchmark graphs with a planted ground truth
+    m.add_function(wrap_pyfunction!(lfr_graph_fn, m)?)?;
 
     // -- finished --
     Ok(())

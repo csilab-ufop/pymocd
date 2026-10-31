@@ -4,6 +4,7 @@
 //! file, You can obtain one at https://www.gnu.org/licenses/gpl-3.0.html
 
 pub mod detectors;
+pub mod generators;
 pub mod metrics;
 
 pub use crate::core::utils::threading::max_cores;

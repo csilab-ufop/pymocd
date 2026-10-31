@@ -443,5 +443,7 @@ print(f"modularity: {nx.community.modularity(G, communities.values(), weight=Non
 - [Core concepts](concepts.md): Pareto fronts and selecting one partition.
 - [Performance and reproducibility](performance.md): repeated runs of
   nondeterministic detectors.
+- [Benchmark graphs](benchmarks.md): LFR graphs with a planted ground truth to
+  score against.
 - Gallery: [Comparing detectors on a planted partition](../examples/benchmarks/plot_compare_detectors.md)
   and [Recovery as mixing increases](../examples/benchmarks/plot_mixing_sweep.md).
