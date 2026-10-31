@@ -24,13 +24,12 @@ compare two labelings only; the graph plays no part in them.
 | [`f1(partition, gt)`][pymocd.f1] | pairwise F1 as a `float` |
 
 Both arguments are `{node: community}` dicts, the shape the detectors return.
-Node ids and community labels must be integers (Python `int` or NumPy integer
-scalars) that fit in a signed 32-bit integer. A string or `float` raises
-`TypeError` and a larger integer raises `OverflowError`, so ground truth stored
-as names has to be mapped to integers first. Labels are identifiers only:
-renaming the communities of either argument changes no score beyond
-floating-point rounding. All four formulas below are symmetric in their two
-arguments.
+Node ids and community labels can be any hashable values, such as integers of
+any size, strings or tuples. They are matched the way dict keys are, so `1`,
+`1.0` and `True` name the same node or community, and ground truth stored as
+names can be scored directly. Labels are identifiers only: renaming the
+communities of either argument changes no score beyond floating-point
+rounding. All four formulas below are symmetric in their two arguments.
 
 A ground-truth example on Zachary's karate club, whose NetworkX copy stores
 each member's faction in the `club` node attribute:
@@ -54,8 +53,12 @@ print(f"one by one:  NMI={pymocd.nmi(partition, gt):.4f}  AMI={pymocd.ami(partit
 
 Only nodes that appear as keys in **both** dicts are scored. A node missing from
 either dict is skipped without a warning, so a partition that omits nodes is
-compared on the shared nodes and is not penalized for the omission. Check
-coverage yourself when it matters:
+compared on the shared nodes and is not penalized for the omission. If the two
+dicts share no node at all and are not both empty, every function raises
+`ValueError`: nothing could be scored, and the usual cause is node ids of
+different types, such as `str` ids read from a file against the `int` ids a
+detector returns. A partial mismatch goes unnoticed, so check coverage
+yourself when it matters:
 
 ```python exec="on" source="above" session="evaluation" result="text"
 first_half = {v: c for v, c in partition.items() if v < 17}
@@ -106,20 +109,58 @@ $$
 \frac{a_i!\,b_j!\,(n-a_i)!\,(n-b_j)!}{n!\,k!\,(a_i-k)!\,(b_j-k)!\,(n-a_i-b_j+k)!}.
 $$
 
-The expectation is computed as this full triple sum over every pair of
-communities and every feasible cell count $k$, with no truncation or asymptotic
-approximation of the sum. Each hypergeometric weight is accumulated in log
-space and then exponentiated, because computed directly it overflows for
-moderate $n$. The log-factorials
-come from a Lanczos log-gamma approximation that the source
-(`src/core/utils/special.rs`) states is accurate to about $2\times10^{-10}$.
-The paper's sum (their eq. 2) starts at $\max(0, a_i+b_j-n)$; the $k = 0$
-term is zero, so starting at 1 changes nothing. The source describes AMI as 0 for labelings
+The fraction in the sum is the hypergeometric probability that a community of
+size $a_i$ and a random community of size $b_j$ share $k$ nodes. The paper's
+sum (their eq. 2) starts at $\max(0, a_i+b_j-n)$; the $k = 0$ term is zero, so
+starting at 1 changes nothing. The source describes AMI as 0 for labelings
 that agree only by chance and negative for agreement worse than chance.
+
+`src/core/metrics/ami.rs` does not evaluate the AMI formula as written. Write
+$\bar H = \tfrac12\bigl(H(U)+H(V)\bigr)$. $\bar H$, $I(U,V)$ and
+$\mathbb{E}[I]$ all contain the term $\ln n$, so when both labelings are nearly
+all singletons the numerator and the denominator are differences of values
+close to $\ln n$, and most of their digits cancel. Under the permutation model,
+the expected overlap of community $i$ with all the communities of $V$ together
+is $a_i$, and likewise $b_j$ for community $j$; with that, the shared terms
+cancel exactly and
+
+$$
+n\bigl(I(U,V) - \bar H\bigr) = Y = \sum_{i,j} n_{ij}\ln\frac{n_{ij}}{\sqrt{a_i\,b_j}},
+\qquad
+n\bigl(\mathbb{E}[I] - \bar H\bigr) = Z = \mathbb{E}[Y],
+\qquad
+\mathrm{AMI}(U,V) = \frac{Z - Y}{Z},
+$$
+
+where $\mathbb{E}[Y]$ is the expectation of the same sum under the permutation
+model. Every term of $Y$ and $Z$ is at most zero, since
+$n_{ij} \le \min(a_i, b_j) \le \sqrt{a_i b_j}$, so neither sum cancels.
+
+The terms of $Z$ depend on a pair of communities only through their sizes, so
+the code sums over pairs of *distinct* sizes and multiplies each by the number
+of community pairs with those sizes. A labeling of $n$ nodes has fewer than
+$\sqrt{2n}$ distinct community sizes, so this visits at most $2n$ size pairs,
+where the sum as written visits every pair of communities ($n^2$ when both
+sides are all singletons). For each size pair, the probabilities are obtained
+from the exact ratio of consecutive terms, starting at the most likely $k$ and
+normalized by their sum, rather than from log-factorials: a log-factorial
+difference cancels terms of size $n \ln n$ and leaves a relative error of order
+$10^{-9}$ in each weight at $n = 10^6$. Terms smaller than $10^{-40}$ times the
+largest one for that size pair are skipped.
+
+In NMI and AMI, the logarithm of a ratio of counts is computed as
+$\ln(1+x)$ with $x$ formed from the exact integer difference whenever the
+ratio is at least $\tfrac12$, so that a ratio close to 1, such as that of a
+community holding almost every node, keeps its low bits. The floating-point
+sums use compensated (Neumaier) summation.
 
 **ARI** is the adjusted Rand index of Hubert and Arabie (1985)
 ([doi:10.1007/BF01908075](https://doi.org/10.1007/BF01908075)): the number of
 node pairs placed together in both partitions, corrected for its expectation.
+The pair counts are exact integers, and the formula below is evaluated as one
+integer ratio with its numerator and denominator rounded once each, as
+scikit-learn does; in floating point, $E$ rounds and the subtraction then
+cancels when both partitions are nearly a single community.
 
 $$
 \mathrm{ARI}(U,V) = \frac{\sum_{i,j}\binom{n_{ij}}{2} - E}{\tfrac12\Bigl[\sum_i\binom{a_i}{2} + \sum_j\binom{b_j}{2}\Bigr] - E},
@@ -252,44 +293,96 @@ for name, p in [("as returned (-1 shared)", part),
 ## Degenerate inputs
 
 The implementation applies these conventions, read from
-`src/core/metrics/` and `src/api/metrics.rs`:
+`src/core/metrics/` and `src/api/metrics.rs`. Except where a bullet says
+otherwise, scikit-learn returns the same values up to floating-point rounding.
 
-- **No shared nodes.** `gt_metrics` returns `(0.0, 0.0, 0.0, 0.0)`. The single
-  functions have no such check: `nmi`, `ami` and `f1` return `1.0` and `ari`
-  returns `nan`.
-- **One shared node.** $\binom{n}{2} = 0$, so the expected index $E$ of ARI
-  is $0/0$ and ARI is `nan`, from `gt_metrics` and from `ari` alike.
-- **NMI** is `1.0` when both entropies are zero, that is, when each argument
-  puts all scored nodes in one community.
-- **AMI** is `1.0` when both entropies are zero, and `0.0` when the
-  denominator $\tfrac12(H(U)+H(V)) - \mathbb{E}[I]$ is below $10^{-15}$ in
-  absolute value. When both arguments put every scored node in its own
-  community, $\mathbb{E}[I] = I(U,V) = H(U) = H(V) = \ln n$, so numerator and
-  denominator are both zero in exact arithmetic; the computed AMI is then
-  `0.0` or `1.0` depending on rounding, as the last line printed by the block
-  below shows for a few values of $n$, while NMI, ARI and F1 are `1.0`.
-- **ARI** is `1.0` when the denominator is below $10^{-15}$ in absolute value,
-  which the source describes as both partitions being all singletons or both
-  being a single community.
+- **Same partition.** When the two arguments are the same partition up to
+  renaming the communities, all four scores are exactly `1.0`. This includes
+  both arguments putting every scored node in one community, and both putting
+  every scored node in its own community, where AMI is $0/0$ in exact
+  arithmetic because $I(U,V) = \mathbb{E}[I] = H(U) = H(V) = \ln n$.
+- **No shared nodes.** All five functions raise `ValueError` when the two
+  dicts share no node and are not both empty, as described in
+  [Which nodes are scored](#which-nodes-are-scored); scikit-learn takes two
+  aligned arrays and has no such case. Two empty dicts are the same (empty)
+  partition and score `1.0`, as scikit-learn scores empty labelings.
+- **One shared node.** One-node labelings are the same partition, so all four
+  scores are `1.0`, as scikit-learn returns for one-element labelings.
+- **One argument is a single community** and the other is not: NMI and AMI
+  are `0.0`, since $I(U,V) = 0$.
+- **One argument is all singletons** and the other is not: AMI is exactly
+  `0.0`, because then $\mathbb{E}[I] = I(U,V)$, both equal to the entropy of the
+  other argument. scikit-learn does not special-case this; it evaluates the
+  formula and returns rounding noise, up to $2.8\times10^{-6}$ in the
+  comparison in the next section.
+- **AMI near zero.** scikit-learn moves the numerator and the denominator of
+  AMI at least machine epsilon ($2.2\times10^{-16}$) away from zero, keeping
+  their signs, to avoid $0/0$. pymocd does not: outside the cases above, its
+  denominator $-Z/n$ is a sum of positive terms and is never zero, and moving
+  the numerator would add up to $2.2\times10^{-16}$ divided by the denominator
+  to the result, $3.2\times10^{-10}$ when each argument has one pair and
+  otherwise singletons on $2\times10^6$ nodes.
+- **ARI** is `1.0` when no pair of scored nodes is together in one argument and
+  apart in the other, which covers the same-partition cases above.
 - **F1** is `1.0` when neither partition has a pair of nodes in the same
-  community ($P_U + P_V = 0$).
+  community ($P_U + P_V = 0$), where its ratio is $0/0$. scikit-learn has no
+  pairwise F1.
 
 ```python exec="on" source="above" session="evaluation" result="text"
 cases = {
-    "no shared nodes": ({0: 0, 1: 1}, {5: 0, 6: 1}),
+    "two empty dicts": ({}, {}),
     "one shared node": ({0: 0}, {0: 7}),
     "both one community": ({0: 0, 1: 0, 2: 0}, {0: 4, 1: 4, 2: 4}),
     "one community vs singletons": ({v: 0 for v in range(4)}, {v: v for v in range(4)}),
+    "singletons vs a pair": ({v: v for v in range(4)}, {0: 0, 1: 0, 2: 1, 3: 2}),
 }
 fmt = lambda xs: "(" + ", ".join(f"{x:.3g}" for x in xs) + ")"
 for name, (p, g) in cases.items():
     single = (pymocd.nmi(p, g), pymocd.ami(p, g), pymocd.ari(p, g), pymocd.f1(p, g))
     print(f"{name:28s} gt_metrics={fmt(pymocd.gt_metrics(p, g))}  nmi/ami/ari/f1={fmt(single)}")
 
-singletons = {n: {v: v for v in range(n)} for n in range(2, 7)}
+singletons = {n: {v: v for v in range(n)} for n in (2, 4, 14, 309)}
 print("identical, all singletons:  ",
       "  ".join(f"n={n}: AMI={pymocd.ami(s, s):.3g}" for n, s in singletons.items()))
+
+try:
+    pymocd.gt_metrics({0: 0, 1: 0, 2: 1}, {"0": 0, "1": 0, "2": 1})
+except ValueError as err:
+    print("int ids against str ids:     ValueError:", err)
 ```
+
+## Agreement with scikit-learn
+
+NMI, AMI and ARI follow scikit-learn's `normalized_mutual_info_score`,
+`adjusted_mutual_info_score` and `adjusted_rand_score` with their default
+`average_method="arithmetic"`, including the conventions above (with the
+exception of AMI near zero); the comparisons below used scikit-learn 1.7.2.
+`tests/test_metrics.py` compares the two on random labelings and on the
+degenerate cases when scikit-learn is installed. On 30,000 random pairs of
+labelings with 1 to $10^6$ nodes:
+
+- **ARI** returned the same float as scikit-learn in every pair.
+- **NMI** differed from scikit-learn by at most $8.8\times10^{-14}$.
+- **AMI** agreed within $10^{-12}$ in 26,498 of the 27,962 pairs where it was
+  computed. The other 1,464 were compared with the exact value, computed with
+  40-digit arithmetic, in the 1,447 where that was affordable: pymocd was
+  within $2.9\times10^{-16}$ of it in all of them, scikit-learn up to
+  $2.8\times10^{-6}$ away. The remaining 17 differ from scikit-learn by at
+  most $4.3\times10^{-11}$.
+
+scikit-learn's AMI error is largest when one argument is all or almost all
+singletons, which makes the denominator small, and with thousands of small
+communities, where its expected mutual information adds up millions of terms
+one at a time and computes each probability from log-factorials. Against the
+exact value, for example, two independent random labelings of $10^5$ nodes
+into $10^5$ labels score $-1.2097898\times10^{-5}$: pymocd is $3\times10^{-17}$
+away and scikit-learn $4.2\times10^{-7}$. The worst conditioned inputs are
+labelings that are nearly all singletons on both sides. On 50 of them, with 1
+to 100 small communities per side among $10^3$ to $2\times10^6$ nodes, pymocd
+was within $2.9\times10^{-16}$ of the 60-digit exact value; scikit-learn, run
+up to $10^4$ nodes, was up to $1.0\times10^{-4}$ away. On twelve labelings of
+$10^4$ to $10^6$ nodes timed on one machine, AMI took under 0.25 s each and
+scikit-learn 2 to 34 s.
 
 ## The karate ground-truth convention
 
