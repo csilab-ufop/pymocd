@@ -107,7 +107,14 @@ exchanging through a dense similarity matrix.
   `O(n²)` in memory and the eigendecomposition is `O(n³)`, which is what caps
   this detector's usable graph size — `benchmarks/_exp_synt_net/algorithms.py`
   registers MMCoMO with `max_nodes=2000` (the hardened harness in
-  `hardened.py` sets no cap of its own).
+  `hardened.py` sets no cap of its own). Derived from this code (the paper is
+  closed access and could not be checked for a bound), a run costs
+  `O(S·n³ + T·P·(P + n² + m·log d_max))` time for `S ≤ 100` Jacobi sweeps,
+  `T = num_gens` and `P = pop_size`, and `O(n² + P·n)` memory, peaking at
+  `32·n²` bytes while the kernel is built. Measured with pymocd 6.1.0 on LFR
+  graphs: 10–12 sweeps, 38.9 s at n = 1000 and 619 s at n = 2000 for the kernel
+  alone, 30.2 and 122.2 MiB peak. Derivation and measurements are in
+  `docs/algorithms/mmcomo.md` (*Complexity*).
 
 **Algorithm**
 

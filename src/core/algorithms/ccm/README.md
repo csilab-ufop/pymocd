@@ -3,7 +3,7 @@
 **Paper**
 Tanveerulhuq Shaik, Vadlamani Ravi & Kalyanmoy Deb, "Evolutionary Multi-Objective
 Optimization Algorithm for Community Detection in Complex Social Networks",
-*SN Computer Science* 2:13, 2021. DOI [10.1007/s42979-020-00382-x](https://doi.org/10.1007/s42979-020-00382-x).
+*SN Computer Science* 2(1):1, 2021. DOI [10.1007/s42979-020-00382-x](https://doi.org/10.1007/s42979-020-00382-x).
 (The same paper defines this project's `krm` module; CCM is its Community
 Score / Community Fitness / Modularity variant.)
 
@@ -87,10 +87,22 @@ the way out.
 | `pop_size` | 200 | Population size. Sec. 8.1 of the paper says 20 for karate, but Table 3's grid and Fig. S.22 use 200, and the value has to stay above the reference-point count `H = 91`. |
 | `num_gens` | 100 | Generations. The paper's best-reported combination on Zachary karate. |
 | `cross_rate` | 0.8 | Probability the child is a uniform crossover rather than a clone. Paper's best combination. |
-| `mut_rate` | 1/68 | Per-gene resampling probability. Paper's best combination (`1/68` on the 34-node karate graph). |
+| `mut_rate` | 1/68 | Per-gene resampling probability. Paper's best combination on the 34-node karate graph, `1/68 = 1/(2n)`; not rescaled for other graphs. |
 | `r` | 1.0 | Community Score power-mean exponent. Fixed by the paper: `r = 1` weights all nodes equally. |
 | `alpha` | 1.0 | Community Fitness degree exponent. Fixed by the paper: `α = 1`, following MOGA-Net. |
 | `divisions` | 12 | Das–Dennis subdivisions `p`. The paper does not state one; 12 is pymoo's `M = 3` convention and gives 91 reference points. |
+
+The paper's Table 3 is a per-dataset sensitivity grid shared by both
+variants: each of D1–D4 (karate n = 34, dolphins 62, football 115, political
+books 105) is tried at 100 generations, crossover 0.8 / 0.85 / 0.9 and
+mutation `1/n`, `2/n`, `1/(2n)`. The best CCM settings are in the text of
+Sec. 8.1, not in Table 3: population 20 / 200 / 450 / 500 and mutation
+1/68 / 1/62 / 1/230 / 2/105 for D1–D4, i.e. `1/(2n)`, `1/n`, `1/(2n)`, `2/n`,
+so no single rule in `n`. The same sentence lists only three crossover rates
+(0.8, 0.85, 0.9) for the four datasets. Only D1's mutation rate is shipped as
+the default; pass the others explicitly to reproduce those datasets. (Read
+from the arXiv preprint, arXiv:2005.03181v1, pp. 10 and 13; the published
+version is not open access.)
 
 Internal constants, all in `nsga3/normalize.rs`: `NEAR_ZERO = 1e-10` (the
 "treat as zero" threshold for a pivot, an intercept and a fallback scale),
@@ -104,10 +116,13 @@ Nondeterministic: two consecutive calls differ. `nsga3::engine::evolve` seeds
 seed parameter on the public API, so the initial population, every crossover,
 mutation and clone draw, and the random tie-breaks inside niching all change
 from run to run. The search itself is sequential (no Rayon), so the thread count
-is not a further source of variation. Measured over 30 runs on Zachary karate:
-AMI 0.2398 ± 0.0000, 4 communities every time — that graph is degenerate, and
-the run-to-run spread shows up on anything larger (on a 250-node LFR graph the
-rank-1 front is roughly 110 ± 30 members).
+is not a further source of variation. Measured with pymocd 6.1.0 (PyPI) over
+30 default `ccm` calls on `nx.karate_club_graph()`: the same 4-community
+partition every time (Q = 0.4198, edges counted), AMI 0.5667 ± 0.0000 against
+networkx's `club` attribute and 0.6712 ± 0.0000 against the convention that
+puts node 8 with the Officers — that graph is degenerate, and the run-to-run
+spread shows up on anything larger (on a 250-node LFR graph the rank-1 front
+is roughly 110 ± 30 members).
 
 **Divergences**
 - `nsga3/` is a private, sequential NSGA-III instead of a shared engine, and

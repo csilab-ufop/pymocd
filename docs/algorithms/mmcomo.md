@@ -243,12 +243,93 @@ dense costs as the limit on the graph sizes MMCoMO can handle; the
 repository's synthetic-network benchmark script
 (`benchmarks/_exp_synt_net/algorithms.py`) registers MMCoMO with
 `max_nodes=2000`, and the comment beside that registration gives the dense
-kernel and its eigendecomposition as the reason. The module README does not
-state a time bound per generation or for a whole run.
-<!-- TODO(docs): per-generation / whole-run time complexity of MMCoMO is not stated in src/core/algorithms/mmcomo/README.md; check whether Zhang et al. (2023) give one (the paper was not available to the docs writer) -->
+kernel and its eigendecomposition as the reason.
 
-The implementation runs single-threaded: the module README states that the
-module contains no parallelism.
+Whether Zhang et al. (2023) state a bound could not be checked. The paper is
+closed access: OpenAlex and Semantic Scholar list no open copy, and it is not
+on arXiv. Its abstract states no bound. The bounds below are derived from this
+implementation's source. Write $P$ for `pop_size`, $T$ for `num_gens`, $g$ for
+`gap` and $d_{\max}$ for the largest degree.
+
+- **Kernel, once per run: $O(S n^3)$.** `jacobi_eigen`
+  (`similarity/kernel.rs`) runs $S$ cyclic sweeps over the $n(n-1)/2$
+  off-diagonal pairs. Each rotation updates two rows and two columns of the
+  working matrix and two columns of the eigenvector matrix, so one sweep costs
+  $O(n^3)$. $S$ is capped at 100 (`MAX_JACOBI_SWEEPS`). Multiplying the
+  eigenvectors back into $SM$ costs another $O(n^3)$. At the end of
+  `diffusion_kernel`, four dense $n \times n$ `f64` matrices are alive at once
+  ($A - D$, the eigenvectors, their scaled copy and $SM$), so building the
+  kernel needs about $32 n^2$ bytes. That is the peak memory of the whole run.
+- **Each generation: $O(P^2 + P(m + n^2))$.** Ranking a population compares
+  every pair of members ($O(P^2)$, `nsga2/sorting.rs`). Each micro child is
+  copied, mutated and evaluated in $O(n + m)$. Each macro child is decoded by
+  `decode` (`similarity/codec.rs`), which compares every node with every
+  centre: $O(nc)$ for a child with $c$ centres, and $c \le n$. Every bit of a
+  child flips with probability `mut_rate`, so a child whose parents have few
+  centres gains about `mut_rate`$\cdot n$ of them.
+- **Each exchange, every $g$ generations: $O(P n^2 + P\, m \log d_{\max})$.**
+  `elite_votes` (`macro_micro/exchange.rs`) fills a new $n \times n$ vote matrix
+  from up to $P$ elites, and `encode` sums the similarity over every pair inside
+  each community. Both cost $O(n^2)$ per elite when one community is large. The
+  local search (`operators/local_search.rs`) runs at most 64 sweeps on each of
+  up to $P$ rank-1 micro members, and each sweep costs $O(n + m \log d_{\max})$
+  because it sorts every node's candidate communities.
+
+A whole run therefore takes $O(S n^3 + T P (P + n^2 + m \log d_{\max}))$ time and
+$O(n^2 + P n)$ memory. The implementation runs single-threaded: the module
+README states that the module contains no parallelism, so wall time equals
+CPU time.
+
+**Measured scaling.** These runs used jackal, a shared server with an AMD Ryzen
+Threadripper 7960X (48 hardware threads, 32 MiB of L3 cache per 6-core
+complex), with Python 3.10.12 and pymocd 6.1.0 from PyPI. The graphs came from
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50,
+min_community=20, max_community=100, seed=1)`. Each run used a fresh
+interpreter. The runs in the table and the $n$ runs further down were pinned
+to a core complex of their own; the `num_gens` and `pop_size` runs were not.
+*Kernel only* is `mmcomo(G, pop_size=0, num_gens=0)`, which builds $SM$ and
+skips the search.
+Times are medians of 3 runs, or single runs at $n$ = 2,000. Peak extra memory is
+the process's peak resident memory minus its resident memory just before the
+call. The binding does not report the Jacobi sweep count, so the count comes
+from a NumPy replay of the `jacobi_eigen` loop on the same matrices (same pivot
+order, thresholds and rotation formulas).
+
+| $n$ | $m$ | Jacobi sweeps | Kernel only | Default run | Peak extra memory | $32 n^2$ bytes |
+|---|---|---|---|---|---|---|
+| 250 | 1,134 | 10 | 0.34 s | 0.54 s | 1.4 MiB | 1.9 MiB |
+| 500 | 2,393 | 11 | 3.18 s | 3.61 s | 7.4 MiB | 7.6 MiB |
+| 1,000 | 4,887 | 11 | 38.9 s | 39.0 s | 30.2 MiB | 30.5 MiB |
+| 2,000 | 9,795 | 12 | 619 s | 609 s | 122.2 MiB | 122.1 MiB |
+
+From $n$ = 1,000 up, peak memory matches the $32 n^2$ bytes derived above.
+Below that, the reading is within the allocator's noise. The sweep count barely
+moves, so the kernel's operation count grows close to $n^3$, about 8 times per
+doubling of $n$. The measured kernel time grew faster: 9.4, 12.2 and 15.9 times
+per doubling. With the sweep count flat, the excess is a higher cost per
+rotation on larger matrices. The likely cause is memory traffic. The rotation
+loop walks matrix columns, and each matrix row is a separate allocation. The
+two matrices it updates take 4 MB at $n$ = 500, already more than a core's
+1 MiB L2 cache, and 64 MB at $n$ = 2,000, more than a complex's 32 MiB L3
+cache. Times on this shared machine also varied between batches: the
+kernel-only run at $n$ = 1,000 took 35.0 to 39.7 s within the batch above, and
+up to 60.8 s in an earlier batch that ran next to the $n$ = 2,000 kernel.
+
+At the defaults, the kernel dominates. Kernel-only runs took 62% of the default
+run's time at $n$ = 250 and 88% at $n$ = 500. At $n$ = 1,000 and 2,000 the
+difference between the two is within the run-to-run spread. The search loop is
+better seen in long runs:
+
+- **`num_gens`.** At $n$ = 500, runs of 200, 400 and 800 generations took 5.17,
+  7.08 and 11.44 s, about 10 ms per generation, so the loop is linear in
+  `num_gens`.
+- **`pop_size`.** At $n$ = 500 with 400 generations, `pop_size` 25, 50, 100 and
+  200 took 4.36, 5.29, 7.14 and 10.95 s. Each doubling adds 0.93, 1.85 and
+  3.81 s, so the loop is linear in `pop_size`.
+- **$n$.** With 400 generations, the loop (run time minus kernel-only time)
+  took about 1.5, 4.1 and 10.0 s at $n$ = 250, 500 and 1,000, so a generation
+  cost 3.8, 10.2 and about 25 ms. That is 2.7 and 2.5 times per doubling,
+  below the $n^2$ bound, which holds as a worst case.
 
 ## When to use it
 
@@ -259,7 +340,8 @@ module contains no parallelism.
   [Divergences from the paper](#divergences-from-the-paper)).
 - **Small graphs.** Because $SM$ is dense, memory grows with $n^2$ and the
   kernel computation with $n^3$; the repository's own benchmark script caps
-  MMCoMO at 2000 nodes (see [Complexity](#complexity)).
+  MMCoMO at 2000 nodes. One run at 2000 nodes took about ten minutes in the
+  measurements under [Complexity](#complexity).
 - **When you want the (KKM, RC) front itself.**
   [`mmcomo_fronts`][pymocd.mmcomo_fronts] exposes every non-dominated
   candidate for your own selection rule. NSGA-III-KRM

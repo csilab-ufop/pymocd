@@ -16,11 +16,15 @@ problems", *Proc. 3rd Annual Conf. on Genetic Programming*, pp. 568–575, 1998 
 the locus-based adjacency encoding Shi §3.1.3 adopts.
 
 **Original implementation**
-None published. The authors' sites and GitHub were searched and no reference
-source for Shi-MOCD exists, so unlike `moganet` there is no binary or result
-file to check this module's numbers against. Every equation below is taken from
-the paper text; every choice the paper leaves open is listed under
-**Divergences**.
+The first author's publications page
+(http://www.shichuan.org/html/publications_ch.html) links a `[code]` archive,
+`MOGAForClustering28.zip`, next to this paper, along with an article-in-press
+copy of the paper (http://www.shichuan.org/doc/11.pdf). The archive is a
+Visual C++ project whose `GA` class keeps the IP/EP populations, offers Q's two
+components as objectives, and implements both the Max-Q and the Max–Min
+Distance selection. This module was written from the paper text and has not
+been compared with that code. Every equation below is taken from the paper
+text; every choice the paper leaves open is listed under **Divergences**.
 
 **Objectives**
 Notation over `G = (V, E)` with `m = |E|` (`graph.edges` holds each undirected
@@ -138,17 +142,36 @@ Python module — see **Known issues**):
 | `cross_rate` | 0.6 | Probability a child is a crossover rather than a parent clone. |
 | `mut_rate` | 0.4 | Per-gene probability of redrawing the allele from the position's neighbours. |
 
-`cross_rate = 0.6` / `mut_rate = 0.4` are Shi Table 1: *"pc and pm are 0.6 and
-0.4 for these four EA based algorithms"* — fixed across every experiment in the
-paper. `rand_networks = 3` is Shi §3.2, which generates three control fronts for
-the artificial networks (the timed real-network runs use one).
+`cross_rate = 0.6` / `mut_rate = 0.4` are Shi §4.2.2, introducing Table 1:
+*"pc and pm are 0.6 and 0.4 for these four EA based algorithms"* — fixed across
+every experiment in the paper (§4.3). `rand_networks = 3` is Shi §3.2, which
+generates three control fronts for the artificial networks (the timed
+real-network runs use one, §4.2.2).
 
 The Python wrappers `pymocd.mocd_q` / `pymocd.mocd_d` do **not** use those
 defaults. They pass `BENCH_CROSS_RATE = 0.9` and `BENCH_MUT_RATE = 0.1`, the
 HP-MOCD benchmark budget (Santos et al. 2025), so that the baseline is compared
 under the same settings as the rest of the repository. To reproduce Shi's
 published configuration, pass `cross_rate=0.6, mut_rate=0.4` explicitly along
-with the per-graph `ipsize`/`epsize`/generation counts from Shi Table 1.
+with the per-graph `ipsize`/`epsize`/generation counts from Shi Table 1, and
+`rand_networks=1` for MOCD-D on these networks:
+
+| Network (Table 1) | n | m | `ip` = `pop_size` | `ep` | `gen` = `num_gens` |
+|---|---:|---:|---:|---:|---:|
+| Karate (P1) | 34 | 78 | 50 | 50 | 50 |
+| Lesmis (P2) | 77 | 254 | 50 | 50 | 50 |
+| Polbooks (P3) | 105 | 441 | 50 | 50 | 100 |
+| Adjnoun (P4) | 112 | 425 | 50 | 50 | 100 |
+| Football (P5) | 115 | 613 | 50 | 50 | 100 |
+| Celegansneural (P6) | 297 | 2345 | 100 | 100 | 100 |
+| Celegansmetabolic (P7) | 453 | 2025 | 100 | 100 | 100 |
+| Netscience (P8) | 1589 | 2742 | 200 | 100 | 200 |
+| Power (P9) | 4941 | 6594 | 300 | 100 | 300 |
+| Hepth (P10) | 8361 | 15751 | 400 | 100 | 400 |
+
+`n`/`m` are the counts the table prints (it spells P6 "Celegansnearal"). `ep`
+equals `min(ip, 100)` in every column, so the derived `ep_size` below matches
+the table without an extra parameter.
 
 Internal constants a reader will hit:
 
@@ -189,7 +212,8 @@ graph, not determinism — treat those three digests as a regression gate, never
 as a guarantee.
 
 **Divergences**
-No reference implementation exists, so these are deliberate readings of, or
+This module was written from the paper text, not from the authors' code (see
+**Original implementation**), so these are deliberate readings of, or
 departures from, the paper text:
 
 - **"Uniform two-point crossover" is implemented as per-gene uniform

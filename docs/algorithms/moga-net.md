@@ -196,10 +196,16 @@ source of run-to-run variation. The search is sequential, so the thread count
 plays no part.
 
 Calls can return different partitions even on a graph as small as Zachary's
-karate club.
-<!-- TODO(docs): the module README's "Measured reference on karate over 30 runs: AMI 0.2554 ± 0.0000, k = 4.00" was dropped because it does not reproduce with pymocd 6.0.1 (jackal, 30 calls of moga_net on nx.karate_club_graph()): 2 distinct partitions, k = 4 every time, AMI 0.474 ± 0.018 against networkx's 'club' labels and 0.584 ± 0.018 with node 8 moved to the Officers; the README does not name its ground truth. Maintainer: re-measure and update the README. -->
-See [Performance and reproducibility](../guide/performance.md) for how to
-handle nondeterministic detectors in experiments.
+karate club, although there it happens rarely. In 300 calls of `moga_net`
+with the defaults on `nx.karate_club_graph()` (pymocd 6.1.0), 296 returned
+the same four-community partition and the other 4 returned two different
+four-community partitions. Their AMI was 0.4718 ± 0.0120 (mean ± standard
+deviation) against networkx's `club` attribute, and 0.5819 ± 0.0120 against
+the convention, used by several papers, that puts node 8 with the Officers. A
+separate sample of 30 calls returned the common partition every time, so a
+spread of zero over a few dozen calls does not show that the detector is
+deterministic. See [Performance and reproducibility](../guide/performance.md)
+for how to handle nondeterministic detectors in experiments.
 
 ## Selecting a partition
 
@@ -315,18 +321,87 @@ A panic reaches Python as `pyo3_runtime.PanicException`, which derives from
 
 ## Complexity
 
-Neither the module README nor the docstrings state a time or memory complexity
-bound.
-<!-- TODO(docs): add a complexity bound for MOGA-Net per generation and per run; sources: Pizzuti (2012, doi:10.1109/TEVC.2011.2161090), Pizzuti (2009, doi:10.1109/ICTAI.2009.58), or a derivation by the maintainer from src/core/algorithms/moganet/. -->
-What the code does per run: it evaluates the $N$ initial genomes, then in each
-of `num_gens` generations it runs one non-dominated sort that compares every
-pair of the $N$ members, computes the crowding distance by sorting each front
-on each of the two objectives, and evaluates the $N - \max(1,
-\operatorname{round}(0.1\,N))$ new children. Each evaluation decodes a genome
-by union-find over $n$ links and computes both objectives in one pass over
-every node's neighbour list. After the last generation the population is
-ranked once more, and `moga_net` computes $Q$ for each rank-1 member. The
+Pizzuti (2012, Sec. VII, p. 429) describes the cost only in words: *"Though
+fitness computation of the two objectives can be done in linear time with
+respect to the number of network nodes, the multiobjective approach employed
+has a time complexity quadratic in the population size."* The bounds below
+are derived for this implementation from the module's source, with $n$ nodes,
+$m$ edges, $N$ = `pop_size` and $G$ = `num_gens`; $T_e$ is the cost of
+evaluating one genome. The port matches Pizzuti's statement: the objectives
+cost $O(n + m)$, which is linear in $n$ when the mean degree is bounded, and
+the cost is quadratic in $N$.
+
+| | This implementation |
+|---|---|
+| **Time per evaluation**, $T_e$ | $O(m + n \log n)$ in the worst case; linear in $n$ in the measurements below |
+| **Time per generation** | $O(N^2 + N\,T_e)$ |
+| **Time per run** | $O\big(G\,(N^2 + N\,T_e) + (n + m)\log n\big)$ for $G \ge 1$ |
+| **Memory** | $O(Nn + N^2 + m)$, about $24\,Nn$ bytes at the peak for the population |
+
+**One evaluation.** `make_individual` in `search/engine.rs` decodes the genome
+with `Locus::decode` (`locus.rs`), a union-find over the $n$ links, and then
+calls `community_objectives` (`objectives.rs`), which reads every node's
+neighbour list once, $2m$ entries in all, so the objectives cost $O(n + m)$.
+Pizzuti (2012, Sec. V-A) notes that decoding can be done in linear time. This
+union-find compresses paths but does not link by rank or size, so its worst
+case is $O(n \log n)$ rather than near-linear (Tarjan and van Leeuwen 1984,
+[doi:10.1145/62.2160](https://doi.org/10.1145/62.2160)); the run times below
+grow linearly in $n$.
+
+**One generation.** `fast_non_dominated_sort` (`search/individual.rs`) tests
+all $N(N - 1)$ ordered pairs of members for dominance, and
+`calculate_crowding_distance` scans the whole population once per front, which
+is $O(N^2)$ when there are many fronts, then sorts each front on both
+objectives. Each of the $N - \max(1, \operatorname{round}(0.1\,N))$ children
+then takes two roulette draws (`roulette_pick` in `search/engine.rs`), each a
+linear scan of the rank order, so the draws add a second $O(N^2)$ term. The
+child's crossover or cloning and its mutation cost $O(n)$, and its evaluation
+$T_e$.
+
+**One run.** Besides the $G$ generations, a run makes the $N$ initial
+evaluations, ranks the final population twice (`run` ranks it once and
+`evolve_ranked` in `api.rs` ranks it again), and, in `moga_net`, computes $Q$
+for each member of the rank-1 front, at most $N$ times $O(n + m)$; each of
+these is $O(N^2 + N\,T_e)$, the bound for one generation. Reading the graph
+from Python (`Graph::from_python` in `src/core/graph/adj.rs`) also sorts the
+node list and every neighbour list, which gives the $(n + m)\log n$ term. The
 search runs on one thread.
+
+**Memory.** Each individual holds its genome (a `Vec<usize>`, 8 bytes per
+node) and its label array (a `Vec<i32>`, 4 bytes per node). The old and the
+new population both stay alive until the end of each generation, so the peak
+is about $2N \times 12n = 24\,Nn$ bytes. The sort keeps, for each member, the
+list of members it dominates, up to $N(N - 1)/2$ indices in all; the graph and
+its neighbour lists take $O(n + m)$. Memory does not grow with $G$.
+[`moga_net_fronts`][pymocd.moga_net_fronts] also returns one dict of $n$
+entries per front member.
+
+The scaling was checked on jackal (AMD Ryzen Threadripper 7960X, 48 hardware
+threads, shared with other jobs; Python 3.10, pymocd 6.1.0 from PyPI). Each
+configuration ran three times, each time in a fresh Python process; the table
+gives the median wall time of the `moga_net` call alone, and the largest rise
+of the process's peak resident memory (`ru_maxrss`) above its resident memory
+just before the call. The LFR graphs are
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50,
+min_community=20, max_community=100, seed=1)`, so $m \approx 5n$. Parameters
+not in the first column are at their defaults.
+
+| Varied, in doubling steps | Wall time | Time factor per doubling | Peak memory |
+|---|---|---|---|
+| $n$ from 1,000 to 16,000 (LFR) | 0.40 s to 7.84 s | 1.87 to 2.39 | 6.3 to 116.1 MiB |
+| $N$ from 75 to 1,200 (LFR, $n = 1{,}000$) | 0.105 s to 1.80 s | 1.79 to 2.22 | 1.2 to 26.6 MiB |
+| $N$ from 300 to 2,400 (karate, $n = 34$) | 0.034 s to 1.40 s | 3.13, 3.50, 3.80 | 0.6 to 15.4 MiB |
+| $G$ from 15 to 120 (LFR, $n = 1{,}000$) | 0.24 s to 1.64 s | 1.72 to 2.11 | 6.5 to 7.1 MiB |
+
+The time grows linearly in $n$ and in $G$. It also grows linearly in $N$ on
+the 1,000-node graph, where the $N\,T_e$ evaluations outweigh the $N^2$
+terms. On the 34-node karate club an evaluation is cheap, the $N^2$ terms
+dominate, and the factor per doubling of $N$ approaches 4. The peak memory
+follows $24\,Nn$ bytes on the LFR graphs (6.9 MiB predicted and 6.3 MiB
+measured at $n = 1{,}000$; 110 MiB predicted and 116.1 MiB measured at
+$n = 16{,}000$). On karate at $N = 2{,}400$ the population accounts for only
+1.9 MiB of the 15.4 MiB, and the peak grew about fourfold from $N = 1{,}200$
+(3.9 MiB), as an $N^2$ term predicts.
 
 ## When to use it
 

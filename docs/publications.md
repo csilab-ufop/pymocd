@@ -5,9 +5,10 @@ description: The papers that describe pymocd's own community detection methods, 
 # Publications
 
 This page lists the papers behind pymocd. It gives the published paper on
-HP-MOCD and the publication status of RIMPSO, the library's two own methods,
-then the papers whose methods pymocd re-implements as baselines. A last
-section is reserved for published work that uses pymocd.
+HP-MOCD, with two short summaries of it, and the publication status of
+RIMPSO, the library's two own methods, then the papers whose methods pymocd
+re-implements as baselines. A last section is reserved for published work
+that uses pymocd.
 For BibTeX entries and guidance on what to cite, see
 [Citing pymocd](citing.md).
 
@@ -29,6 +30,27 @@ the DOI lists the article under a CC BY 4.0 licence. A preprint of the same
 paper is available as
 [arXiv:2506.01752](https://arxiv.org/abs/2506.01752); the arXiv record links
 to the published version.
+
+Some of the same authors have since published two short Portuguese-language
+summaries of the paper. Both present HP-MOCD and refer readers to the journal
+paper for the full results, so cite the journal paper for the method.
+
+- Santos, G. O., Ferreira, C. H. G., & Moreira, G. J. P. (2026). HP-MOCD: Um
+  Algoritmo Evolucionário Multiobjetivo de Alto Desempenho para Detecção de
+  Comunidades em Redes Complexas. *Revista Eletrônica de Iniciação Científica
+  em Computação*, 24, 418–424.
+  [doi:10.5753/reic.2026.8488](https://doi.org/10.5753/reic.2026.8488)
+- Santos, G. O., Vieira, L. S., Ferreira, C. H. G., & Moreira, G. J. P.
+  (2026). HP-MOCD: Viabilizando a Detecção de Comunidades Multiobjetivo em
+  Redes de Larga Escala. In *Anais do XV Brazilian Workshop on Social Network
+  Analysis and Mining (BraSNAM 2026)*, 262–268. Sociedade Brasileira de
+  Computação.
+  [doi:10.5753/brasnam.2026.22901](https://doi.org/10.5753/brasnam.2026.22901)
+
+The first names pymocd as the library that provides HP-MOCD and gives
+`github.com/oliveira-sh/pymocd`, now a fork of this repository, as the
+location of the source code. Bibliographic details follow the Crossref record
+of each DOI.
 
 [HP-MOCD algorithm page](algorithms/hpmocd.md){ .md-button }
 [BibTeX](citing.md#the-pymocd-paper){ .md-button }
@@ -80,8 +102,10 @@ Eqs. 3.5 and 3.6, which is the paper Shi-MOCD ports. The
 
 ## Publications using pymocd
 
-The repository does not record any published work that uses pymocd yet.
-<!-- TODO(docs): list peer-reviewed work that uses pymocd (full citation and DOI) as it is reported; none is recorded in README.md, res/, benchmarks/ or the git history as of 2026-10-30. -->
+No published work by other authors that uses pymocd has been confirmed yet.
+Of the works found that cite the HP-MOCD paper, those whose full text could
+be read cite it without using pymocd.
+<!-- TODO(docs): list peer-reviewed work by other authors that uses pymocd (full citation and DOI). Searched 2026-10-31: works citing doi:10.1007/s13278-025-01519-7 in OpenAlex (cites:W4414898022, 1 work), Semantic Scholar (7, one of them the authors' REIC summary) and Crossref (cited-by count 5, list not public); full-text search for "pymocd" and "HP-MOCD" in OpenAlex (besides the HP-MOCD paper itself, only the authors' REIC and BraSNAM summaries; "pymocd" also matched an unrelated chemistry review), Semantic Scholar keyword search (0; its full-text snippet search was rate-limited) and Europe PMC (0). Full text read, cited only: Wahid Ahmed & Hama Ali Faraj 2026 (doi:10.5121/ijaia.2026.17405), Amedapu & Velusamy 2026 (doi:10.3390/app16073329), de Oliveira et al. 2026 (doi:10.1145/3795766.3799768, arXiv:2604.18586 version read). Paywalled, not checked: Rahimi et al. 2026 (doi:10.1007/s00521-026-12599-7), Sun et al. 2026 (doi:10.1007/s41060-026-01128-3), Li et al. 2026 (doi:10.1016/j.ins.2026.123170). Not yet published: OHP-MOCD (github.com/aanasakhtar/ohp-mocd), a fork of pymocd whose README cites a Springer LNCS paper with no DOI; list it once it has one. -->
 
 If you have published work that uses pymocd, please let us know by
 [opening an issue](https://github.com/csilab-ufop/pymocd/issues) on GitHub

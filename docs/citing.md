@@ -44,6 +44,11 @@ the electronic ISSN and the online publication date of 18 November 2025. The
 value in `pages` is the article number: Crossref records 110 as the article
 number and gives no page range.
 
+Some of the same authors have also published two short Portuguese-language
+summaries of this paper, listed on the [Publications](publications.md#hp-mocd)
+page. Both refer readers to the journal paper for the full results; cite the
+journal paper.
+
 ### Report the version you used
 
 Defaults, selection rules and detector names have changed between releases
@@ -230,29 +235,44 @@ number 1, from Crossref.
 
 ## Citing the software
 
-The repository contains no `CITATION.cff` file and records no software DOI
-for any release, so there is no canonical software citation yet. Cite the
-pymocd paper above. If a venue also asks for a software reference, the
-repository records the following:
-<!-- TODO(docs): add a CITATION.cff to the repository root and archive releases with a DOI (e.g. through the Zenodo GitHub integration), then give that DOI and its BibTeX here. -->
+The repository root contains a
+[`CITATION.cff`](https://github.com/csilab-ufop/pymocd/blob/master/CITATION.cff)
+file in version 1.2.0 of the
+[Citation File Format](https://citation-file-format.github.io/). It describes
+the software and names the pymocd paper [above](#the-pymocd-paper) as its
+preferred citation. GitHub reads the file from the default branch and adds a
+*Cite this repository* link to the right sidebar of the
+[repository page](https://github.com/csilab-ufop/pymocd), which exports the
+citation as APA or BibTeX. Because the file sets a preferred citation, that
+link gives the pymocd paper, not the software.
 
-Name
+No release has a DOI yet, so there is no archived, citable copy of the
+software. Cite the pymocd paper. If a venue also asks for a software
+reference, `CITATION.cff` records the following:
+<!-- TODO(docs): archive releases with a DOI (e.g. through the Zenodo GitHub integration, which needs the maintainer's GitHub and Zenodo accounts), then add that DOI to CITATION.cff and give the DOI and its BibTeX here. -->
+
+Title
 :   pymocd
 
 Author
-:   Guilherme O. Santos (`pyproject.toml`)
+:   Guilherme O. Santos, as in `pyproject.toml`
 
 Version
-:   the one printed by `version("pymocd")` [above](#report-the-version-you-used)
+:   6.1.0, released on 31 October 2026, the release the file was written
+    for. If you used another version, give the one printed by
+    `version("pymocd")` [above](#report-the-version-you-used).
 
 Repository
 :   [https://github.com/csilab-ufop/pymocd](https://github.com/csilab-ufop/pymocd)
 
-Package
-:   [https://pypi.org/project/pymocd/](https://pypi.org/project/pymocd/)
+Documentation
+:   [https://csilab.ufop.br/pymocd/](https://csilab.ufop.br/pymocd/)
 
-Licence
+License
 :   GPL-3.0-or-later
+
+The package itself is published on PyPI as
+[pymocd](https://pypi.org/project/pymocd/).
 
 ## See also
 

@@ -127,9 +127,18 @@ seed parameter. Everything downstream of the draws is order-fixed (`Vec`
 accumulators, a stable node order, first-visit relabelling, sequential sort and
 selection), so the *only* source of run-to-run variation is the RNG stream.
 
-Measured reference on karate over 30 runs: AMI 0.2554 ± 0.0000, k = 4.00. The
-zero spread is the objective landscape of a 34-node graph, not determinism —
-the returned partition itself is not guaranteed identical between calls.
+Measured reference on karate (`nx.karate_club_graph()`, defaults, pymocd 6.1.0
+from PyPI) over 30 calls: AMI 0.4704 ± 0.0000 against networkx's `club`
+attribute and 0.5805 ± 0.0000 against the convention that puts node 8 with the
+Officers, k = 4 every time; all 30 calls returned the same partition. The zero
+spread is the objective landscape of a 34-node graph, not determinism: over
+300 calls, 296 returned that partition and 4 returned two other four-community
+partitions, for AMI 0.4718 ± 0.0120 against `club` and 0.5819 ± 0.0120
+against the node-8 convention (mean ± standard deviation). An earlier revision
+of this README gave AMI 0.2554 ± 0.0000, k = 4.00, without naming its ground
+truth. That figure does not reproduce: none of scikit-learn's four AMI
+normalizations gives it against either convention, and the script that
+produced it is not in the repository.
 
 **Divergences**
 The two search-loop divergences are **unverifiable** against the reference,

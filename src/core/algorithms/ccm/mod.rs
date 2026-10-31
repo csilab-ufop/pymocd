@@ -1,4 +1,4 @@
-//! NSGA-III-CCM (Shaik, Ravi & Deb, SN Computer Science 2:13, 2021); see README.md.
+//! NSGA-III-CCM (Shaik, Ravi & Deb, SN Computer Science 2(1):1, 2021); see README.md.
 //!
 //! `nsga3` is a self-contained, sequential NSGA-III and deliberately does not
 //! reuse this crate's shared engine or Rayon: this baseline's cost and

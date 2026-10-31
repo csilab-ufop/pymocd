@@ -355,8 +355,7 @@ more than `pop_size` members.
 
 ## Complexity
 
-The module README does not state an overall time or memory bound. It describes
-the cost of individual steps:
+The module README describes the cost of individual steps:
 
 - Node moves update the objective counts incrementally. A full recount happens
   only at seeding and after a merge sweep.
@@ -367,7 +366,75 @@ the cost of individual steps:
 - The flight's `n`-sized scratch buffers are allocated once per worker thread
   for the whole run, not once per particle per iteration.
 
-<!-- TODO(docs): overall time/memory complexity of RIMPSO (per iteration and total, in n, m, pop_size, num_gens) is not stated in src/core/algorithms/rimpso/README.md; take it from the RIMPSO paper once published. -->
+The RIMPSO paper is not published, so the bounds below are derived from this
+implementation's source, not taken from the paper. Write $P$ for `pop_size`,
+$T$ for `num_gens`, $L$ for `ls_period`, $A$ for `archive` and $W$ for the
+number of Rayon threads.
+
+- **Flight, per particle and iteration: $O(n + m)$.** `advance`
+  (`swarm/motion.rs`) visits every node once. It reads a node's neighbors only
+  when the node moves (`link_pair`) or takes the local move (`best_move`,
+  `swarm/local.rs`).
+- **Local search, per particle every $L$-th iteration: $O(n + m \log m)$ plus
+  the repair.** `merge_sweep` (`swarm/merge.rs`) counts the edges between
+  communities in $O(n + m)$, sorts at most $m$ candidate merges, and recounts
+  both objectives in $O(n + m)$. The repair (`repair`, `swarm/motion.rs`) costs
+  $O(\deg v)$ for each queued vertex $v$, and a vertex that moves queues itself
+  and its neighbors again. The code sets no cap on the number of moves, so the
+  repair's cost depends on the data.
+- **Archive, per iteration, on one thread: $O(P(A + P + n))$.** Each of the $P$
+  offers scans the archive, which holds at most $\max(A, P) + P$ members before
+  a prune, and copies the particle's $n$ labels if it is accepted. The rung
+  prune scans the archive once per rung (`pareto/archive.rs`).
+- **Seeding and selection, once each: $O((P + F)(n + m))$**, for a returned
+  front of $F \le \max(A, P)$ members (`swarm/init.rs`, `front/assortative.rs`).
+
+A run therefore does $O(T P (n + m + A + P) + (T/L)\, P\, (m \log m + R))$
+work, where $R$ is the repair work of one particle at one local-search
+iteration. The flights, the seeding and the selection are split across the $W$
+threads by particle or by front member; the archive update is not. Memory is
+$O((P + A)\, n + W (n + m))$: each particle holds three length-$n$ arrays
+(labels, velocities and personal best), the archive holds up to
+$\max(A, P) + P$ label arrays, and each worker thread holds one set of
+length-$n$ scratch arrays and a list of at most $m$ candidate merges
+(`ScratchPool`, `swarm/particle.rs`).
+
+**Measured scaling.** These runs used jackal, a shared server with an AMD Ryzen
+Threadripper 7960X (48 hardware threads), with Python 3.10.12 and pymocd 6.1.0
+from PyPI. The graphs came from `pymocd.lfr_graph(n, 2.5, 1.5, 0.3,
+average_degree=10, max_degree=50, min_community=20, max_community=100,
+seed=1)`. Each run used a fresh interpreter with the pool set by
+[`max_cores`][pymocd.max_cores] to 8 threads, except where the thread count is
+varied, and every figure is the median of 3 runs. CPU time is the process's
+total over all threads. Peak
+extra memory is the process's peak resident memory minus its resident memory
+just before the call. The `num_gens=0` column times the setup alone: graph
+conversion, seeding, one archive update and the selection.
+
+| $n$ | $m$ | Default run, wall | Default run, CPU | `num_gens=0`, wall | Peak extra memory |
+|---|---|---|---|---|---|
+| 10,000 | 49,851 | 0.86 s | 6.43 s | 0.014 s | 18.5 MiB |
+| 20,000 | 100,227 | 1.79 s | 13.38 s | 0.031 s | 38.8 MiB |
+| 40,000 | 200,564 | 3.77 s | 28.18 s | 0.096 s | 82.5 MiB |
+| 80,000 | 400,885 | 8.58 s | 63.43 s | 0.13 s | 163.6 MiB |
+
+The growth is close to linear in $n$, as the bound predicts for a sparse graph:
+each doubling multiplied the wall time by 2.09, 2.10 and 2.27, the CPU time by
+2.08, 2.11 and 2.25, and the peak extra memory by 2.10, 2.13 and 1.98. At
+$n$ = 20,000 the other terms behaved as derived:
+
+- **`num_gens`.** CPU time was 3.39, 7.38, 13.54 and 24.88 s at 25, 50, 100 and
+  200 iterations, close to linear.
+- **`pop_size`.** With `archive` set equal to `pop_size`, CPU time was 3.79,
+  7.82, 13.44 and 28.37 s, and peak extra memory 14.2, 23.3, 38.6 and
+  70.1 MiB, at 25, 50, 100 and 200 particles.
+- **`ls_period`.** CPU time was 10.52 s with the local search off (0), 14.31 s at
+  the default 10 and 41.00 s at 1. An iteration that runs the repair and the
+  merge sweep therefore costs about four times a flight-only iteration.
+- **Threads.** At the defaults, wall time was 12.28, 6.06, 3.33, 1.81 and
+  1.10 s on 1, 2, 4, 8 and 16 threads (11.2 times faster on 16), while total CPU
+  time rose from 12.27 to 15.15 s. Every thread count returned a partition with
+  the same 451 communities.
 
 ## When to use it
 
