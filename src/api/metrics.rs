@@ -32,6 +32,19 @@ fn aligned_labels(
 }
 
 /// (NMI, AMI, ARI, F1) of a partition against ground truth (gt).
+///
+/// Only nodes present in both dicts are scored; a node missing from either is
+/// ignored, not penalised. ``-1`` is an ordinary label, so all ``-1`` nodes
+/// count as one community. NMI and AMI normalise by the arithmetic mean of the
+/// two entropies; F1 is the pair-counting F1.
+///
+/// Args:
+///     partition: ``dict[node, community]`` to score, e.g. a detector's output.
+///     gt: ground-truth ``dict[node, community]``.
+///
+/// Returns:
+///     ``(nmi, ami, ari, f1)`` as floats; ``(0.0, 0.0, 0.0, 0.0)`` when the two
+///     dicts share no node.
 #[gen_stub_pyfunction]
 #[pyfunction]
 #[pyo3(name = "gt_metrics", signature = (partition, gt))]
@@ -44,6 +57,18 @@ pub fn gt_metrics_fn(
 }
 
 /// Normalised mutual information between two {node:community} dicts.
+///
+/// Normalised by the arithmetic mean of the two entropies. Only nodes present
+/// in both dicts are scored; a node missing from either is ignored, not
+/// penalised. ``-1`` is an ordinary label, so all ``-1`` nodes count as one
+/// community.
+///
+/// Args:
+///     partition: ``dict[node, community]`` to score, e.g. a detector's output.
+///     gt: ground-truth ``dict[node, community]``.
+///
+/// Returns:
+///     NMI as a ``float`` in [0, 1].
 #[gen_stub_pyfunction]
 #[pyfunction]
 #[pyo3(name = "nmi", signature = (partition, gt))]
@@ -59,6 +84,19 @@ pub fn nmi_fn(partition: &Bound<'_, PyDict>, gt: &Bound<'_, PyDict>) -> PyResult
 }
 
 /// Adjusted mutual information between two {node:community} dicts.
+///
+/// Normalised by the arithmetic mean of the two entropies; agreement at chance
+/// level scores 0 and agreement worse than chance is negative. Only nodes
+/// present in both dicts are scored; a node missing from either is ignored,
+/// not penalised. ``-1`` is an ordinary label, so all ``-1`` nodes count as one
+/// community.
+///
+/// Args:
+///     partition: ``dict[node, community]`` to score, e.g. a detector's output.
+///     gt: ground-truth ``dict[node, community]``.
+///
+/// Returns:
+///     AMI as a ``float``.
 #[gen_stub_pyfunction]
 #[pyfunction]
 #[pyo3(name = "ami", signature = (partition, gt))]
@@ -75,6 +113,17 @@ pub fn ami_fn(partition: &Bound<'_, PyDict>, gt: &Bound<'_, PyDict>) -> PyResult
 }
 
 /// Adjusted Rand index between two {node:community} dicts.
+///
+/// Only nodes present in both dicts are scored; a node missing from either is
+/// ignored, not penalised. ``-1`` is an ordinary label, so all ``-1`` nodes
+/// count as one community.
+///
+/// Args:
+///     partition: ``dict[node, community]`` to score, e.g. a detector's output.
+///     gt: ground-truth ``dict[node, community]``.
+///
+/// Returns:
+///     ARI as a ``float``; ``nan`` when fewer than two nodes are shared.
 #[gen_stub_pyfunction]
 #[pyfunction]
 #[pyo3(name = "ari", signature = (partition, gt))]
@@ -84,6 +133,19 @@ pub fn ari_fn(partition: &Bound<'_, PyDict>, gt: &Bound<'_, PyDict>) -> PyResult
 }
 
 /// Pairwise F1 between two {node:community} dicts.
+///
+/// A pair-counting score (harmonic mean of pair precision and pair recall over
+/// same-community node pairs), not the community-matching F1 some papers
+/// report. Only nodes present in both dicts are scored; a node missing from
+/// either is ignored, not penalised. ``-1`` is an ordinary label, so all ``-1``
+/// nodes count as one community.
+///
+/// Args:
+///     partition: ``dict[node, community]`` to score, e.g. a detector's output.
+///     gt: ground-truth ``dict[node, community]``.
+///
+/// Returns:
+///     F1 as a ``float`` in [0, 1].
 #[gen_stub_pyfunction]
 #[pyfunction]
 #[pyo3(name = "f1", signature = (partition, gt))]
