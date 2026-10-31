@@ -42,14 +42,21 @@ them to PyPI when a tag is pushed or the workflow is started by hand.
 | `windows-latest` | 3.10, 3.11, 3.12, 3.13 |
 | `macos-latest` | 3.10, 3.11, 3.12, 3.13 |
 
-The workflow does not pass a target architecture to maturin, and the
-repository does not list the CPU architectures the published wheels cover. For
-6.0.1, PyPI's record of the release (`https://pypi.org/pypi/pymocd/6.0.1/json`)
-lists wheels for CPython 3.10–3.13 tagged `manylinux_2_34_x86_64`,
-`macosx_11_0_arm64` and `win_amd64`, plus the source distribution; the
-[project page on PyPI](https://pypi.org/project/pymocd/) shows the files of
-every release.
-<!-- TODO(docs): state the CPU architecture (and Linux glibc floor) of each published wheel. release.yml passes no --target to `maturin build`; its "Build universal2 wheels on macOS" comment is not matched by a universal2 target. PyPI's file list for 6.0.1 (checked 2026-10-30) shows macosx_11_0_arm64, manylinux_2_34_x86_64 and win_amd64 wheels for cp310-cp313 plus pymocd-6.0.1.tar.gz; the maintainer should confirm and decide what to promise. -->
+The workflow does not pass a target architecture to maturin, so each runner
+builds for its own architecture. For 6.1.0, PyPI's record of the release
+(`https://pypi.org/pypi/pymocd/6.1.0/json`, checked on 2026-10-31) lists
+wheels for CPython 3.10–3.13 with these tags, plus the source distribution:
+
+| Wheel tag | Platform |
+|---|---|
+| `manylinux_2_34_x86_64` | Linux on x86-64 with glibc 2.34 or later |
+| `macosx_11_0_arm64` | macOS 11 or later on Apple silicon |
+| `win_amd64` | Windows on x86-64 |
+
+The 6.0.1 release had the same tags. Other platforms, such as Intel Macs,
+Linux on ARM, musl-based Linux or Python 3.14, install from the source
+distribution. The [project page on PyPI](https://pypi.org/project/pymocd/)
+shows the files of every release.
 When no wheel matches your interpreter or platform, pip downloads the source
 distribution and compiles it, which needs a Rust toolchain; see
 [Building from source](#building-from-source).
