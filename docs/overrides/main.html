@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {#- PNG fallbacks for browsers without SVG favicons, then the SVG again so it
+      stays the last (preferred) icon where SVG is supported. -#}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}">
+  <link rel="icon" type="image/svg+xml" href="{{ 'assets/favicon.svg' | url }}">
+  <link rel="apple-touch-icon" href="{{ 'assets/apple-touch-icon.png' | url }}">
+{% endblock %}

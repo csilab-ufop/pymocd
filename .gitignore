@@ -423,3 +423,9 @@ pymocd.pyi
 .docs-stub/
 docs/assets/
 benchmarks/data/
+
+# mkdocs-gallery output, generated from examples/ at build time
+docs/examples/
+
+# Nerd Fonts downloads cached by docs/fonts/build_fonts.py
+docs/fonts/.cache/

@@ -1,44 +1,84 @@
 site_name: pymocd
-site_description: Multi-objective evolutionary community detection, powered by Rust
+site_description: Multi-objective evolutionary community detection for NetworkX and igraph graphs, with a parallel Rust core
+site_author: Guilherme Santos
 site_url: https://csilab.ufop.br/pymocd/
 repo_url: https://github.com/csilab-ufop/pymocd
 repo_name: csilab-ufop/pymocd
+edit_uri: edit/master/docs/
+copyright: >-
+  Copyright &copy; 2025&ndash;2026 Guilherme Santos &middot;
+  <a href="https://github.com/csilab-ufop/pymocd/blob/master/LICENSE">GPL-3.0-or-later</a>
+
 theme:
   name: material
-  favicon: assets/icon.svg
+  custom_dir: docs/overrides
+  logo: assets/face.svg
+  favicon: assets/favicon.svg
+  # Self-hosted Nerd Fonts, see docs/stylesheets/fonts.css.
+  font: false
   icon:
-    logo: material/book-open-variant
     repo: fontawesome/brands/github
+    edit: material/pencil-outline
+    view: material/file-eye-outline
   palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: custom
       accent: custom
       toggle:
-        icon: material/weather-night
+        icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: custom
       accent: custom
       toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+        icon: material/weather-night
+        name: Switch to system preference
   features:
-    - navigation.sections
-    - navigation.top
-    - navigation.footer
-    - navigation.instant
-    - search.suggest
-    - search.highlight
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
     - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
     - toc.follow
 
 extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css
+  - stylesheets/fonts.css
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js
 
 extra:
   generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/csilab-ufop/pymocd
+      name: Source code on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pymocd/
+      name: pymocd on PyPI
 
 hooks:
   - docs/hooks.py
@@ -46,26 +86,61 @@ hooks:
 exclude_docs: |
   hooks.py
   requirements.txt
+  fonts/build_fonts.py
+  fonts/.cache/
   __pycache__/
+  overrides/
+  examples/**/mg_execution_times.md
+  examples/**/*.md5
+  examples/**/*.pickle
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
+  - def_list
+  - footnotes
   - md_in_html
   - tables
-  - footnotes
+  - toc:
+      permalink: true
+      permalink_title: Link to this section
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight
-  - pymdownx.inlinehilite
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - toc:
-      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
-  - search
+  - search:
+      separator: '[\s​\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - gallery:
+      examples_dirs: examples
+      gallery_dirs: docs/examples
+      filename_pattern: /plot_
+      within_subsection_order: FileNameSortKey
+      download_all_examples: false
+      remove_config_comments: true
+      show_memory: false
+      matplotlib_animations: false
+  - markdown-exec
   - mkdocstrings:
       handlers:
         python:
@@ -74,22 +149,55 @@ plugins:
             docstring_style: google
             docstring_options:
               warn_unknown_params: false
+            docstring_section_style: table
             show_source: false
             show_root_heading: true
+            heading_level: 3
+            show_root_full_path: false
             show_symbol_type_heading: true
             show_symbol_type_toc: true
             separate_signature: true
             show_signature_annotations: true
+            signature_crossrefs: true
+            members_order: source
             line_length: 80
+  - redirects:
+      redirect_maps:
+        examples/plotting.md: examples/basics/plot_karate_club.md
+        examples/pareto-fronts.md: guide/fronts.md
 
 nav:
   - Home: index.md
-  - Getting started: getting-started.md
-  - Algorithms: algorithms.md
-  - Examples:
-      - Plotting communities: examples/plotting.md
-      - Pareto fronts: examples/pareto-fronts.md
+  - User guide:
+      - Getting started: getting-started.md
+      - Installation: guide/installation.md
+      - Input graphs: guide/input-graphs.md
+      - Core concepts: guide/concepts.md
+      - Choosing a detector: guide/choosing.md
+      - Working with Pareto fronts: guide/fronts.md
+      - Evaluating partitions: guide/evaluation.md
+      - Performance and reproducibility: guide/performance.md
+  - Algorithms:
+      - algorithms/index.md
+      - Library methods:
+          - RIMPSO: algorithms/rimpso.md
+          - HP-MOCD: algorithms/hpmocd.md
+      - Re-implemented baselines:
+          - CDRME: algorithms/cdrme.md
+          - MMCoMO: algorithms/mmcomo.md
+          - NSGA-III-CCM: algorithms/ccm.md
+          - NSGA-III-KRM: algorithms/krm.md
+          - GDPSO: algorithms/gdpso.md
+          - Shi-MOCD: algorithms/shi-mocd.md
+          - MOGA-Net: algorithms/moga-net.md
+  - Examples: examples
   - API reference:
+      - api/index.md
       - Detectors: api/detectors.md
       - Pareto fronts: api/fronts.md
-      - Metrics & utilities: api/metrics.md
+      - Metrics and utilities: api/metrics.md
+  - Research:
+      - Citing pymocd: citing.md
+      - Publications: publications.md
+      - Changelog: changelog.md
+      - Contributing: contributing.md

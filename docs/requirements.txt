@@ -1,3 +1,15 @@
-mkdocs-material>=9.5
+# Site generator, theme and plugins. Material and its plugins do not support
+# MkDocs 2.0, hence the upper bound.
+mkdocs>=1.6,<2
+mkdocs-material>=9.7
 mkdocstrings[python]>=0.26
+mkdocs-gallery>=0.10.4
+markdown-exec>=1.10
+mkdocs-redirects>=1.2
 ruff
+
+# Imported by the examples and code blocks executed during the build. pymocd
+# itself is built from this checkout (`make docs`, or `pip install .` in CI).
+networkx>=3.2
+matplotlib>=3.8
+python-igraph>=0.11

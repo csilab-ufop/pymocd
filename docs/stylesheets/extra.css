@@ -1,43 +1,263 @@
+/* pymocd documentation theme.
+ *
+ * Palette taken from res/logo.svg:
+ *   navy  #0F3D75   blue   #0B4DA2   green #009B3A   yellow #FFC800
+ *   ink   #101820   cream  #F4E3C6   mist  #C7D3E6   slate  #9FB3CC
+ * Dark-mode tints are lifted from the same hues.
+ */
+
 :root {
-  --md-primary-fg-color: #0F3D75;
-  --md-primary-fg-color--light: #0B4DA2;
-  --md-primary-fg-color--dark: #0A2C55;
-  --md-accent-fg-color: #009B3A;
+  /* Nerd Fonts, self-hosted by fonts.css; Symbols Nerd Font supplies the icons. */
+  --md-text-font: "Noto Sans Nerd Font Propo", "Symbols Nerd Font";
+  --md-code-font: "RobotoMono Nerd Font", "Symbols Nerd Font";
+  --pm-navy: #0F3D75;
+  --pm-blue: #0B4DA2;
+  --pm-green: #009B3A;
+  --pm-yellow: #FFC800;
+  --pm-ink: #101820;
+  --pm-cream: #F4E3C6;
+  --pm-mist: #C7D3E6;
+  --pm-slate: #9FB3CC;
+  --pm-serif: "Noto Serif Nerd Font Propo", "Symbols Nerd Font", Georgia, Cambria, "Times New Roman", serif;
 }
 
+/* ---------- light ---------- */
+
+[data-md-color-scheme="default"] {
+  /* Material paints the header with primary-fg and writes on it with primary-bg. */
+  --md-primary-fg-color: #FFFFFF;
+  --md-primary-fg-color--light: #F4F7FB;
+  --md-primary-fg-color--dark: #DCE4F0;
+  --md-primary-bg-color: #0F3D75;
+  --md-primary-bg-color--light: rgba(15, 61, 117, 0.6);
+  --md-accent-fg-color: #009B3A;
+  --md-accent-fg-color--transparent: rgba(0, 155, 58, 0.1);
+  --md-accent-bg-color: #FFFFFF;
+  --md-typeset-a-color: #0B4DA2;
+  --md-code-bg-color: #F4F7FB;
+  --md-typeset-mark-color: rgba(255, 200, 0, 0.35);
+
+  --pm-heading: #0F3D75;
+  --pm-surface: #F4F7FB;
+  --pm-border: #DCE4F0;
+  --pm-muted: #4A5B73;
+  --pm-button: #0F3D75;
+  --pm-button-hover: #009B3A;
+  --pm-pill-own: #00702A;
+  --pm-pill-base: #0B4DA2;
+}
+
+/* ---------- dark ---------- */
+
 [data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #0B4DA2;
-  --md-primary-fg-color--light: #2F6FC4;
-  --md-primary-fg-color--dark: #0A2C55;
-  --md-accent-fg-color: #00C24A;
-  --md-typeset-a-color: #4D94E8;
+  --md-hue: 215;
+  /* Darker than Material's slate (lightness 14% page, 18% code). */
+  --md-default-bg-color: hsla(var(--md-hue), 30%, 7%, 1);
+  --md-default-bg-color--light: hsla(var(--md-hue), 30%, 7%, 0.54);
+  --md-default-bg-color--lighter: hsla(var(--md-hue), 30%, 7%, 0.26);
+  --md-default-bg-color--lightest: hsla(var(--md-hue), 30%, 7%, 0.07);
+  --md-code-bg-color: hsla(var(--md-hue), 25%, 11%, 1);
+  --md-footer-bg-color: hsla(var(--md-hue), 30%, 5%, 0.87);
+  --md-footer-bg-color--dark: hsla(var(--md-hue), 30%, 4%, 1);
+  --md-primary-fg-color: #080C12;
+  --md-primary-fg-color--light: #101820;
+  --md-primary-fg-color--dark: #05080C;
+  --md-primary-bg-color: #E8EEF7;
+  --md-primary-bg-color--light: rgba(232, 238, 247, 0.6);
+  --md-accent-fg-color: #3CCB78;
+  --md-accent-fg-color--transparent: rgba(60, 203, 120, 0.12);
+  --md-accent-bg-color: #101820;
+  --md-typeset-a-color: #7FB0F5;
+  --md-typeset-mark-color: rgba(255, 200, 0, 0.3);
+
+  --pm-heading: #DCE7F7;
+  --pm-surface: #121922;
+  --pm-border: #212B3A;
+  --pm-muted: #A3B3C9;
+  --pm-button: #2F6FC4;
+  --pm-button-hover: #23A35A;
+  --pm-pill-own: #3CCB78;
+  --pm-pill-base: #7FB0F5;
+}
+
+/* ---------- layout and header ---------- */
+
+.md-grid {
+  max-width: 68rem;
+}
+
+.md-header {
+  border-bottom: 0.05rem solid var(--pm-border);
+}
+
+.md-tabs {
+  border-bottom: 0.05rem solid var(--pm-border);
+}
+
+.md-tabs__link {
+  font-weight: 600;
+}
+
+.md-tabs__item--active .md-tabs__link {
+  color: var(--md-accent-fg-color);
 }
 
 .md-header__button.md-logo {
-  padding: 0;
+  padding: 0.2rem;
+  margin-right: 0.2rem;
 }
 
 .md-header__button.md-logo img,
-.md-header__button.md-logo svg {
-  height: 2rem;
+.md-nav__button.md-logo img {
+  height: 1.9rem;
   width: auto;
 }
 
-.md-header__topic {
-  font-size: 1rem;
+.md-header__topic:first-child {
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-.md-footer-meta {
-  display: none;
+/* Material sets `display: block` on header logo images, so the swap needs !important. */
+[data-md-color-scheme="default"] .pymocd-logo--dark,
+[data-md-color-scheme="slate"] .pymocd-logo--light {
+  display: none !important;
 }
 
-.md-nav__button.md-logo img,
-.md-nav__button.md-logo svg {
-  height: 2rem;
-  width: auto;
+@media screen and (min-width: 60em) {
+  [data-md-color-scheme="default"] .md-search__form {
+    background-color: rgba(15, 61, 117, 0.06);
+  }
+  [data-md-color-scheme="default"] .md-search__form:hover {
+    background-color: rgba(15, 61, 117, 0.1);
+  }
+  [data-md-color-scheme="slate"] .md-search__form {
+    background-color: rgba(232, 238, 247, 0.08);
+  }
+  [data-md-color-scheme="slate"] .md-search__form:hover {
+    background-color: rgba(232, 238, 247, 0.12);
+  }
 }
 
-.pymocd-sr-title {
+/* ---------- typography ---------- */
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  font-family: var(--pm-serif);
+  color: var(--pm-heading);
+  letter-spacing: -0.005em;
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  font-size: 2.1em;
+  margin-bottom: 0.8em;
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  padding-bottom: 0.25em;
+  border-bottom: 0.05rem solid var(--pm-border);
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+}
+
+.md-typeset .doc-heading {
+  font-family: var(--md-text-font-family);
+}
+
+.md-typeset .doc-heading .doc-object-name {
+  font-family: var(--md-code-font-family);
+  font-size: 0.92em;
+}
+
+.md-typeset {
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.md-typeset code {
+  border-radius: 0.2rem;
+}
+
+.md-typeset table:not([class]) {
+  font-size: 0.74rem;
+  border: 0.05rem solid var(--pm-border);
+  border-radius: 0.3rem;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--pm-surface);
+  color: var(--pm-heading);
+}
+
+/* Centre display math when it fits, scroll it from the left edge when it does
+   not: auto margins on a flex item collapse instead of pushing it off-screen.
+   The side padding matches the bleed Material gives math blocks on phones. */
+.md-typeset .katex-display {
+  position: relative; /* contains KaTeX's absolutely positioned MathML copy */
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2rem 0.8rem;
+}
+
+.md-typeset .katex-display > .katex {
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+/* ---------- buttons ---------- */
+
+.md-typeset .md-button {
+  border-radius: 0.4rem;
+  color: var(--md-typeset-a-color);
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+.md-typeset .md-button--primary {
+  background-color: var(--pm-button);
+  border-color: var(--pm-button);
+  color: #FFFFFF;
+}
+
+.md-typeset .md-button:focus,
+.md-typeset .md-button:hover {
+  background-color: var(--pm-button-hover);
+  border-color: var(--pm-button-hover);
+  color: #FFFFFF;
+}
+
+/* ---------- admonitions ---------- */
+
+:root {
+  --md-admonition-icon--cite: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 17h3l2-4V7h-6v6h3M6 17h3l2-4V7H5v6h3z"/></svg>');
+}
+
+.md-typeset .admonition.cite,
+.md-typeset details.cite {
+  border-color: var(--pm-yellow);
+}
+
+.md-typeset .cite > .admonition-title,
+.md-typeset .cite > summary {
+  background-color: rgba(255, 200, 0, 0.12);
+}
+
+.md-typeset .cite > .admonition-title::before,
+.md-typeset .cite > summary::before {
+  background-color: #C79A00;
+  -webkit-mask-image: var(--md-admonition-icon--cite);
+  mask-image: var(--md-admonition-icon--cite);
+}
+
+/* ---------- landing page ---------- */
+
+.pm-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -46,53 +266,209 @@
   white-space: nowrap;
 }
 
-.pymocd-hero {
-  max-width: 46rem;
-  margin: 1.75rem auto 2.5rem;
+.pm-hero {
+  max-width: 44rem;
+  margin: 1.5rem auto 2rem;
   text-align: center;
 }
 
-.pymocd-hero-logo {
+.pm-hero img {
   display: block;
-  width: min(100%, 34rem);
-  margin: 0 auto 1.25rem;
+  width: min(100%, 32rem);
+  margin: 0 auto 1.2rem;
 }
 
-.pymocd-hero > p {
-  color: var(--md-default-fg-color--light);
+.pm-hero .pm-tagline {
+  font-family: var(--pm-serif);
+  font-size: 1.25rem;
+  line-height: 1.45;
+  color: var(--pm-heading);
+  margin: 0 auto 1.2rem;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .pm-hero .pm-tagline {
+    font-size: 1.05rem;
+  }
+}
+
+/* The landing page has no source worth editing or viewing. */
+.md-content:has(.pm-hero) .md-content__button {
+  display: none;
+}
+
+.pm-hero .md-button {
+  margin: 0.3rem 0.2rem 0;
+  padding: 0.6em 1.6em;
+}
+
+.pm-start {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 1.2rem;
+  align-items: start;
+  margin: 1rem 0 2rem;
+}
+
+.pm-start h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+  border-bottom: 0;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .pm-start {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.md-typeset .pm-cite {
+  margin: 2rem 0 1rem;
+  padding: 1rem 1.2rem;
+  border: 0.05rem solid var(--pm-border);
+  border-left: 0.25rem solid var(--pm-yellow);
+  border-radius: 0.4rem;
+  background-color: var(--pm-surface);
+}
+
+.md-typeset .pm-cite p:first-child {
   margin-top: 0;
 }
 
-.pymocd-hero .md-button {
-  margin: 0.4rem 0.3rem 0;
-  padding: 0.7em 2.2em;
-  font-size: 0.85rem;
+.md-typeset .pm-cite .md-button {
+  margin-top: 0.2rem;
 }
 
-.pymocd-highlights {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 1.25rem 0 1.75rem;
+/* The four feature cards on the landing page sit in a 2 x 2 grid. */
+@media screen and (min-width: 45em) {
+  .md-typeset .grid.pm-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.pymocd-highlights > div {
-  flex: 1 1 10rem;
-  border: 0.05rem solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  padding: 0.7rem 0.9rem;
-  text-align: center;
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.5rem;
 }
 
-.pymocd-highlights strong {
-  display: block;
-  font-size: 0.75rem;
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--md-accent-fg-color);
+}
+
+/* ---------- algorithm pages ---------- */
+
+.md-typeset .pm-pill {
+  display: inline-block;
+  margin: 0 0.3rem 0.3rem 0;
+  padding: 0.1rem 0.6rem;
+  border: 0.05rem solid currentColor;
+  border-radius: 1rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.md-typeset .pm-pill--own {
+  color: var(--pm-pill-own);
+}
+
+.md-typeset .pm-pill--baseline {
+  color: var(--pm-pill-base);
+}
+
+.md-typeset .pm-pill--neutral {
+  color: var(--pm-muted);
+}
+
+.md-typeset .pm-facts table {
+  display: table;
+  width: 100%;
+}
+
+.md-typeset .pm-facts table th:empty {
+  display: none;
+}
+
+.md-typeset .pm-facts td:first-child {
+  width: 11rem;
+  font-weight: 600;
+  color: var(--pm-heading);
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .pm-facts td:first-child {
+    width: auto;
+    white-space: normal;
+  }
+}
+
+/* ---------- API reference (mkdocstrings) ---------- */
+
+:root,
+[data-md-color-scheme="default"] {
+  --doc-symbol-function-fg-color: #00702A;
+  --doc-symbol-function-bg-color: rgba(0, 155, 58, 0.1);
+  --doc-symbol-class-fg-color: #0B4DA2;
+  --doc-symbol-class-bg-color: rgba(11, 77, 162, 0.1);
+  --doc-symbol-method-fg-color: #0F3D75;
+  --doc-symbol-method-bg-color: rgba(15, 61, 117, 0.1);
+  --doc-symbol-attribute-fg-color: #8A6A00;
+  --doc-symbol-attribute-bg-color: rgba(255, 200, 0, 0.18);
+}
+
+[data-md-color-scheme="slate"] {
+  --doc-symbol-function-fg-color: #3CCB78;
+  --doc-symbol-function-bg-color: rgba(60, 203, 120, 0.12);
+  --doc-symbol-class-fg-color: #7FB0F5;
+  --doc-symbol-class-bg-color: rgba(127, 176, 245, 0.12);
+  --doc-symbol-method-fg-color: #A9C7EF;
+  --doc-symbol-method-bg-color: rgba(169, 199, 239, 0.12);
+  --doc-symbol-attribute-fg-color: #FFD95C;
+  --doc-symbol-attribute-bg-color: rgba(255, 200, 0, 0.14);
+}
+
+.md-typeset .doc-object {
+  margin-bottom: 2rem;
+}
+
+.md-typeset h2.doc-heading {
+  border-bottom: 0;
+}
+
+.md-typeset .doc-contents:not(.first) {
+  padding-left: 0.9rem;
+  border-left: 0.1rem solid var(--pm-border);
+}
+
+.md-typeset .doc-signature,
+.md-typeset .doc-signature code {
+  font-size: 0.76rem;
+}
+
+/* ---------- examples gallery (mkdocs-gallery) ---------- */
+
+.md-typeset .mkd-glr-thumbcontainer {
+  border: 0.05rem solid var(--pm-border);
+  border-radius: 0.5rem;
+  background-color: var(--md-default-bg-color);
+  box-shadow: none;
+}
+
+.md-typeset .mkd-glr-thumbcontainer:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0.2rem 0.6rem rgba(16, 24, 32, 0.12);
+}
+
+.md-typeset .mkd-glr-thumbcontainer img {
+  border-radius: 0.3rem;
+  background-color: #FFFFFF;
+}
+
+.md-typeset .mkd-glr-thumbcontainer a.internal,
+.md-typeset .mkd-glr-thumbcontainer .mkd-glr-thumbnail-title {
   color: var(--md-default-fg-color);
-}
-
-.pymocd-highlights span {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.64rem;
-  color: var(--md-default-fg-color--light);
+  font-weight: 600;
 }

@@ -5,6 +5,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyDict, PyList};
+use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use rayon::prelude::*;
 use rustc_hash::FxBuildHasher;
 use std::collections::HashMap;
@@ -23,17 +24,32 @@ type Degrees = HashMap<NodeId, usize, FxBuildHasher>;
 
 const LOG_EVERY_GENERATIONS: usize = 10;
 
-/// NSGA-II multi-objective community detection.
+/// NSGA-II multi-objective community detection (HP-MOCD) with a configurable
+/// budget and optional Python objectives.
+///
+/// The search is not seeded: each ``run`` or ``generate_pareto_front`` call is
+/// a new search, and two calls on the same graph can differ.
 ///
 /// Args:
-///     graph: networkx.Graph or DiGraph.
-///     debug_level: 0 silent, 1+ logs every 10 generations.
-///     pop_size: NSGA-II population size.
+///     graph: networkx.Graph or igraph.Graph with integer node ids; edges are
+///         read as undirected and unweighted. Custom objectives receive this
+///         object unchanged.
+///     debug_level: 0 silent; 1 or more prints a graph summary once, at
+///         construction, and logs every 10th generation and the last.
+///     pop_size: NSGA-II population size. Must be at least 4; this is not
+///         checked, and 1 to 3 make the four-parent draw loop forever.
 ///     num_gens: number of generations.
-///     cross_rate: crossover probability.
-///     mut_rate: mutation probability.
-///     objectives: optional list of callables ``(graph, partition) -> float``
-///         to minimise; replaces the built-in intra/inter objectives.
+///     cross_rate: probability that a child is the ensemble crossover of its
+///         four parents rather than a copy of one. Must lie in [0, 1].
+///     mut_rate: per-node probability of a neighbour-majority move. Must lie
+///         in [0, 1].
+///     objectives: optional list of callables ``(graph, partition) -> float``,
+///         all minimised; a non-empty list replaces the built-in intra/inter
+///         objectives. ``graph`` is the object passed here and ``partition`` a
+///         ``dict[node, community]`` holding the search's raw labels (not
+///         renumbered, isolated nodes not yet ``-1``). The same dict is cleared
+///         and refilled for every evaluation, so do not keep a reference to it.
+#[gen_stub_pyclass]
 #[pyclass]
 pub struct HpMocd {
     graph: Graph,
@@ -154,6 +170,7 @@ impl HpMocd {
     }
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl HpMocd {
     #[new]
@@ -208,6 +225,14 @@ impl HpMocd {
     }
 
     /// Replace the objectives. Empty list reverts to built-in intra/inter.
+    ///
+    /// Args:
+    ///     objectives: list of callables ``(graph, partition) -> float``, all
+    ///         minimised, called as described for the constructor; an empty
+    ///         list reverts to the built-in intra/inter objectives.
+    ///
+    /// Returns:
+    ///     ``None``.
     #[pyo3(signature = (objectives))]
     pub fn set_objectives(&mut self, objectives: &Bound<'_, PyList>) -> PyResult<()> {
         self.py_objectives = objectives.iter().map(pyo3::Bound::unbind).collect();
@@ -216,19 +241,42 @@ impl HpMocd {
 
     /// Register per-generation callback ``(gen, num_gens, front_size) -> None``.
     /// Pass ``None`` to clear.
+    ///
+    /// The callback runs once per generation, after the new offspring are
+    /// merged into the population. ``gen`` counts from 0. ``front_size`` is the
+    /// number of rank-1 survivors of that generation's selection, counted before
+    /// the new offspring are ranked, so it is at most ``pop_size``. An exception
+    /// raised by the callback aborts the search.
+    ///
+    /// Args:
+    ///     callback: callable taking ``(gen, num_gens, front_size)``, or
+    ///         ``None`` to clear the registered one.
+    ///
+    /// Returns:
+    ///     ``None``.
     #[pyo3(signature = (callback))]
     pub fn set_on_generation(&mut self, callback: Option<&Bound<'_, PyAny>>) -> PyResult<()> {
         self.on_generation = callback.map(|cb| cb.clone().unbind());
         Ok(())
     }
 
+    /// Number of generations the search runs.
     #[getter]
     pub const fn num_gens(&self) -> usize {
         self.num_gens
     }
 
-    /// Return all non-dominated solutions as ``[(partition, objectives), ...]``.
-    /// Objective order matches the configured objectives (or intra/inter).
+    /// Run a new search and return its rank-1 front as
+    /// ``[(partition, objectives), ...]``.
+    ///
+    /// The front is the rank-1 survivors of the last generation's selection; the
+    /// last generation's offspring are never ranked, so they cannot appear. It
+    /// holds at most ``pop_size`` members and can repeat a partition. Objective
+    /// order matches the configured objectives (or intra/inter).
+    ///
+    /// Returns:
+    ///     ``list[tuple[dict[node, community], list[float]]]``. Partitions number
+    ///     communities from 0 and give isolated nodes ``-1``.
     #[pyo3(signature = ())]
     pub fn generate_pareto_front(&self, py: Python<'_>) -> PyResult<Vec<(Partition, Vec<f64>)>> {
         let first_front = self.search(Some(py))?;
@@ -244,8 +292,16 @@ impl HpMocd {
             .collect())
     }
 
-    /// Run and return the best partition (max-Q from the Pareto front).
-    /// Isolated nodes get community ``-1``.
+    /// Run a new search and return one member of its rank-1 front.
+    ///
+    /// Picks the member with the smallest sum of objective values. With the
+    /// built-in intra/inter objectives that is the member of highest modularity
+    /// (Q = 1 - intra - inter); with custom objectives it is not modularity, so
+    /// select from ``generate_pareto_front`` if you need another rule. An empty
+    /// front (``pop_size=0`` or ``num_gens=0``) raises ``PanicException``.
+    ///
+    /// Returns:
+    ///     ``dict[node, community]``. Isolated nodes get community ``-1``.
     #[pyo3(signature = ())]
     pub fn run(&self, py: Python<'_>) -> PyResult<Partition> {
         let first_front: Vec<Individual> = self.search(Some(py))?;

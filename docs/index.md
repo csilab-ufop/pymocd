@@ -1,86 +1,109 @@
 ---
+title: pymocd
+description: Multi-objective evolutionary community detection for NetworkX and igraph graphs, with a parallel Rust core.
 hide:
   - navigation
   - toc
 ---
 
-<div class="pymocd-hero" markdown>
+<h1 class="pm-sr-only">pymocd</h1>
 
-<h1 class="pymocd-sr-title">pymocd</h1>
+<div class="pm-hero" markdown>
 
-![pymocd](assets/logo.svg){ .pymocd-hero-logo }
+![pymocd: multi-objective community detection](assets/logo.svg#only-light)
+![pymocd: multi-objective community detection](assets/logo-dark.svg#only-dark)
 
-Evolutionary community detection for Python, with the heavy lifting done in parallel Rust.
+<p class="pm-tagline">Multi-objective evolutionary community detection for NetworkX and igraph graphs, with a parallel Rust core.</p>
 
-[Getting started](getting-started.md){ .md-button .md-button--primary }
-[API reference](api/detectors.md){ .md-button }
+[Get started](getting-started.md){ .md-button .md-button--primary }
+[Examples](examples/index.md){ .md-button }
+[API reference](api/index.md){ .md-button }
 
 </div>
+
+<div class="pm-start" markdown>
+
+<div markdown>
+
+## Install
 
 ```bash
-pip install pymocd
+pip install pymocd networkx
 ```
 
-<div class="pymocd-highlights">
-  <div>
-    <strong>Rust + PyO3 core</strong>
-    <span>Rayon parallelism on every core</span>
-  </div>
-  <div>
-    <strong>Ten algorithms</strong>
-    <span>NSGA-II · NSGA-III · PESA-II · PSO</span>
-  </div>
-  <div>
-    <strong>GPL-3.0-or-later</strong>
-    <span>Free and open source</span>
-  </div>
-</div>
+pymocd itself has no runtime dependencies; NetworkX (or python-igraph)
+supplies the graphs. Prebuilt wheels cover CPython 3.10–3.13 on Linux, macOS
+and Windows; see [Installation](guide/installation.md) for the platforms of
+each release.
 
-<div class="grid cards" markdown>
-
-- :material-rocket-launch:{ .lg .middle } **Fast by construction**
-
-    ---
-
-    The core is written in Rust with PyO3 bindings and Rayon data
-    parallelism — evolutionary search scales across every core you
-    give it with `max_cores`.
-
-- :material-power-plug:{ .lg .middle } **Drop-in for NetworkX and igraph**
-
-    ---
-
-    Pass your `networkx.Graph` or `igraph.Graph` directly. Every
-    detector returns a plain `dict` mapping node to community.
-
-- :material-flask:{ .lg .middle } **Learn by example**
-
-    ---
-
-    Plot detected communities, plug in custom objectives, and walk
-    Pareto fronts with copy-paste-runnable examples.
-
-    [:octicons-arrow-right-24: Examples](examples/plotting.md)
 
 </div>
 
-!!! quote "Citing pymocd"
+<div markdown>
 
-    If you use any of these algorithms in your research, please cite the
-    HP-MOCD paper ([SNAM, 2025](https://doi.org/10.1007/s13278-025-01519-7)):
+## Detect communities
 
-    ```bibtex
-    @article{Santos2025,
-      author    = {Santos, Guilherme O. and Vieira, Lucas S. and Rossetti, Giulio and Ferreira, Carlos H. G. and Moreira, Gladston J. P.},
-      title     = {A high-performance evolutionary multiobjective community detection algorithm},
-      journal   = {Social Network Analysis and Mining},
-      year      = {2025},
-      volume    = {15},
-      number    = {1},
-      pages     = {110},
-      doi       = {10.1007/s13278-025-01519-7},
-      url       = {https://doi.org/10.1007/s13278-025-01519-7},
-      issn      = {1869-5469},
-      date      = {2025-11-18}
-    }
-    ```
+```python exec="on" source="above" session="home" result="text"
+import networkx as nx
+import pymocd
+
+communities = pymocd.rimpso(nx.karate_club_graph())   # {node: community}
+print(len(set(communities.values())), "communities")
+```
+
+</div>
+
+</div>
+
+<div class="grid cards pm-features" markdown>
+
+-   :material-graph-outline:{ .lg .middle } **Nine algorithms, one interface**
+
+    ---
+
+    Two methods developed in this library, RIMPSO and HP-MOCD, and seven
+    re-implemented baselines from the literature. Every detector takes a graph
+    and returns a plain `dict[node, community]`.
+
+    [:octicons-arrow-right-24: Algorithms](algorithms/index.md)
+
+-   :material-language-rust:{ .lg .middle } **Rust core, Rayon parallelism**
+
+    ---
+
+    The evolutionary search is written in Rust and exposed to Python through
+    PyO3. RIMPSO, HP-MOCD, CDRME and GDPSO run in parallel on a shared Rayon
+    thread pool, sized with [`max_cores`][pymocd.max_cores].
+
+    [:octicons-arrow-right-24: Performance](guide/performance.md)
+
+-   :material-file-document-check-outline:{ .lg .middle } **Documented baselines**
+
+    ---
+
+    Each re-implementation records the paper it follows, its parameters, and
+    every deliberate divergence from the original method.
+
+    [:octicons-arrow-right-24: Re-implemented baselines](algorithms/index.md#re-implemented-baselines)
+
+-   :material-ruler-square-compass:{ .lg .middle } **Native evaluation metrics**
+
+    ---
+
+    NMI, AMI, ARI and pairwise F1 against ground truth, computed in Rust over
+    the nodes both partitions share.
+
+    [:octicons-arrow-right-24: Evaluating partitions](guide/evaluation.md)
+
+</div>
+
+<div class="pm-cite" markdown>
+
+**Using pymocd in your research?** Please cite the HP-MOCD paper: Santos et al.,
+*A high-performance evolutionary multiobjective community detection algorithm*,
+Social Network Analysis and Mining 15, 110 (2025).
+
+[How to cite](citing.md){ .md-button .md-button--primary }
+[Publications](publications.md){ .md-button }
+
+</div>
