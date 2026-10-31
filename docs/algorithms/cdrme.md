@@ -258,10 +258,10 @@ $s / \texttt{pop\_size}$, as described above.
 
 ## Complexity
 
-The paper's overall complexity bound is not recorded in the repository, and
-the module README does not state one.
-<!-- TODO(docs): overall time/space complexity of CDRME — check the paper (Dabaghi-Zarandi et al. 2025, JNCA 234:104070) for a stated bound; the module README gives only per-step costs. -->
-The module README states these per-step costs:
+The paper (Dabaghi-Zarandi et al., 2025) is behind the publisher's paywall and
+was not read for this page, so whether it states an overall bound has not
+been checked and none is quoted here. The module README does not state one
+either. It states these per-step costs:
 
 - one Eq. (4) similarity column is accumulated in
   $O\bigl(\sum_{w \in N(r)} \mathrm{deg}(w)\bigr)$ without materializing the
@@ -273,9 +273,103 @@ The module README states these per-step costs:
   `pop_size=100` and 14.3 s at `pop_size=300` on a 50k-node, 241k-edge
   stochastic block model with 48 cores.
 
-The $\mathrm{ENC}$ composition rounds are sequential (each round's decay feeds
-the next draw) and do not depend on `pop_size`; the `pop_size` merge chains
-and the `elite_size` mutation tasks run in parallel.
+The bounds below are derived from the Rust source of this implementation.
+Write $n$ for the number of nodes, $m$ for the number of edges of the simple
+graph, $\Delta$ for the largest degree, $\ell$ for the longest walk (Eq. 7),
+$k \le \mathrm{ENC}$ for the number of primary communities, $E_C$ for the
+number of community pairs joined by at least one edge in the primary
+partition, $P$ for `pop_size`, $E = \min(\texttt{elite\_size}, P)$, $S$ for
+`mut_sweeps`, $W$ for `n_walk` and $T$ for the number of Rayon threads.
+
+- **Pre-processing** (`topology.rs`) sorts and deduplicates every adjacency
+  row: $O(n + m \log \Delta)$.
+- **Primary composition** (`primary.rs`), $\mathrm{ENC}$ rounds. Each round
+  passes over all $n$ nodes a fixed number of times: to clear, normalize and
+  rescale the Eq. (8) column (`avg_similarity` in `similarity/walk_sim.rs`)
+  and to fold it into the chromosome (`Chromosome::absorb` in
+  `chromosome/genes.rs`). Each round also runs $W$ walks of at most $\ell$
+  steps, each step a binary search in a cached transition row, and ranks the
+  visited nodes by frequency, $O(W \ell \log n)$; it then accumulates
+  Eq. (8) over at most $\ell$ walk nodes, each a two-hop scan of
+  $O(\Delta^2)$ entries. The softmax rows (`walk/procedure.rs`) are built at
+  most once per node, $O\bigl(\sum_v \mathrm{deg}(v)^2\bigr)$ in all. The
+  stage costs
+  $O\bigl(\mathrm{ENC} \cdot (n + W \ell \log n + \ell \Delta^2) + \sum_v \mathrm{deg}(v)^2\bigr)$.
+- **Merge chains** (`evolve/merge.rs`). Each chain builds its own relation
+  graph and decodes its labels, $O(n + m)$. Chain $s$ makes
+  $\lfloor 2 k s / P \rfloor$ attempts, about $k P$ over all chains, and every
+  attempt scores the trial merge with `objective_if_merged`
+  (`objective.rs`), which reads the relation-graph row of every live
+  community, $O(k + E_C)$. Applying an accepted merge is cheaper, as the
+  README states. The stage costs $O\bigl(P (n + m) + P k (k + E_C)\bigr)$.
+- **Mutation and selection** (`evolve/mutate.rs`, `evolve/select.rs`,
+  `search` in `api.rs`). Each of the $E$ candidates runs at most $S$ sweeps of
+  $O(n + m)$, then a modularity evaluation, a relation-graph build and a sort
+  of its labels: $O\bigl(E (S (n + m) + n \log n)\bigr)$.
+
+The whole run is the sum of the four stages. For a graph of fixed mean degree
+$\bar d = 2m/n$, $\mathrm{ENC} \approx n / \bar d$, so the
+$\mathrm{ENC} \cdot n$ term of the composition grows as $n^2 / \bar d$; and
+since $k$ and $E_C$ also grow in proportion to $n$, the merge stage grows as
+$P n^2$. The run is therefore quadratic in $n$ and linear in `pop_size`.
+Memory is $O\bigl(P n + T (n + k + E_C) + m\bigr)$: the label vectors of all
+$P$ chains (4 bytes per node each) are held together until they are ranked;
+each running chain or mutation task holds its own relation graph, and each
+mutation task a copy of the similarity vector (8 bytes per node); the cached
+transition rows hold one 8-byte value per adjacency entry, at most $16m$
+bytes.
+
+The bounds are total work. Pre-processing and the $\mathrm{ENC}$ composition
+rounds are sequential (each round's decay feeds the next draw) and do not
+depend on `pop_size`, so the $n^2 / \bar d$ term is not divided among
+threads. The `pop_size` merge chains and the `elite_size` mutation tasks run
+in parallel on the Rayon pool (`into_par_iter` in `api.rs`), so the wall time
+of those stages is about their work divided by $\min(P, T)$ and
+$\min(E, T)$.
+
+The scaling was checked on jackal (48 cores, shared with other jobs; Python
+3.10; pymocd 6.1.0 from PyPI) on LFR graphs from
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50, min_community=20, max_community=100, seed=1)`,
+which have $m \approx 5n$ and no isolated nodes. Each setting ran in a fresh
+interpreter, on one thread (`pymocd.max_cores(1)`), and only the `cdrme` call
+was timed. With `pop_size=1` and `mut_sweeps=0` the single chain makes no
+merge attempt and mutation is skipped, so the returned partition is the
+primary one and the time covers only pre-processing, composition and
+linear-time bookkeeping:
+
+| $n$ | 2,500 | 5,000 | 10,000 | 20,000 | 40,000 | 80,000 |
+|---|---|---|---|---|---|---|
+| $\mathrm{ENC}$ (Eq. 6) | 251 | 490 | 1,003 | 1,995 | 3,989 | 7,982 |
+| $k$ (primary) | 251 | 489 | 1,002 | 1,993 | 3,983 | 7,969 |
+| $E_C$ (primary) | 3,950 | 8,437 | 17,345 | 34,935 | 70,489 | 141,864 |
+| Time, `pop_size=1`, `mut_sweeps=0` (s) | 0.014 | 0.035 | 0.11 | 0.33 | 1.18 | 4.96 |
+| Time, `pop_size=30` (s) | 0.11 | 0.40–0.43 | 1.24–1.31 | 5.06–5.36 | 22.2 | — |
+
+$k$ is within 0.2% of $\mathrm{ENC}$ and $E_C$ is 16 to 18 times $k$ on
+these graphs, so both grow in proportion to $n$, as assumed above. The
+composition time grows by 2.5, 3.1, 3.1, 3.6 and 4.2 times per doubling of
+$n$, rising toward the factor of 4 of a quadratic term as the
+$\mathrm{ENC} \cdot n$ passes overtake the linear terms. With 30 chains,
+where the merge stage dominates, the time grows by 2.9 to 4.4 times per
+doubling and by 4.1 to 4.4 times from 20,000 to 40,000 nodes (two runs per
+setting, except a single run at $n = 40{,}000$). At $n = 10{,}000$,
+`pop_size` = 1, 25, 50,
+100 and 200 took 0.10, 1.11–1.19, 2.27–2.52, 4.30–4.36 and 9.01–9.22 s,
+0.042 to 0.046 s per added chain: linear, as derived. At $n = 20{,}000$
+(one run each), `pop_size` = 50, 200 and 400 took 8.6, 34.9 and 67.1 s,
+0.17 s per added chain, about four times the per-chain cost at half the
+size. At the defaults on the $n = 10{,}000$ graph, one thread took
+12.2–13.0 s and 48 threads took 0.58–0.63 s of wall time (17.9–18.5 s of CPU
+time), with other jobs keeping the machine's load average at about 18.
+
+The memory terms were checked from the peak resident set size during the
+call minus the resident size before it. On one thread at $n = 20{,}000$, the
+call added 9.4, 20.2 and 36.4 MiB at `pop_size` = 50, 200 and 400, or 4.0
+bytes per node per extra chain, against the 4 bytes of a chain's label
+vector. On 48 threads the per-thread term dominates: at $n = 50{,}000$ the
+call added 641 MiB at `pop_size=100` and 723 MiB at `pop_size=400` (one run
+each). This measurement does not separate the relation graphs from the
+memory allocator's own per-thread overhead.
 
 ## When to use it
 

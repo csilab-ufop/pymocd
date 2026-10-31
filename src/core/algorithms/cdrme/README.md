@@ -94,8 +94,14 @@ lower centre id.
 *Sec. 4.3.1, `chromosome/relation.rs`* — the lighter form: one gene per
 community. `inner[c]` is the Fig. 6 loop weight, `adj[c][d]` the link weight and
 `total[c]` is `totalLinks(c)`. This is the community relation graph the whole
-merge phase runs on, so a merge is `O(deg(c))` on the community graph rather
-than `O(m)` on the network.
+merge phase runs on, so applying a merge is `O(deg(c))` on the community graph
+rather than `O(m)` on the network. Scoring a trial merge
+(`objective_if_merged`) still reads every live community's row, `O(k + E_C)`
+for `k` communities and `E_C` linked community pairs, so the merge phase costs
+`O(pop_size·(n + m) + pop_size·k·(k + E_C))` in all; with the `O(ENC·n)`
+passes of the primary composition, a run is quadratic in `n` at fixed mean
+degree and linear in `pop_size` (derivation and measurements in
+`docs/algorithms/cdrme.md`, *Complexity*).
 
 Isolated nodes keep a dense id so they can be reported, but are absent from
 `active` and from every equation: Eq. (4) scores them `0` against everything,

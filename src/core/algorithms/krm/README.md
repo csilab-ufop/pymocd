@@ -3,7 +3,7 @@
 **Paper**
 Tanveerulhuq Shaik, Vadlamani Ravi & Kalyanmoy Deb, "Evolutionary Multi-Objective
 Optimization Algorithm for Community Detection in Complex Social Networks",
-*SN Computer Science* 2:13, 2021. DOI [10.1007/s42979-020-00382-x](https://doi.org/10.1007/s42979-020-00382-x).
+*SN Computer Science* 2(1):1, 2021. DOI [10.1007/s42979-020-00382-x](https://doi.org/10.1007/s42979-020-00382-x).
 (The same paper defines this project's `ccm` module; the three letters of each
 name are its three objectives — **K**KM / **R**atio-Cut / **M**odularity here,
 Community Score / Community Fitness / Modularity there.)
@@ -121,10 +121,16 @@ between `Locus::build` and `api.rs::to_partition` speaks positions, never
 | `mut_rate` | 1/34 | Per-gene resampling probability — `1/n` on the 34-node karate graph. Same combination. |
 | `divisions` | 12 | Das–Dennis subdivisions `p`. The paper does not state one; 12 is pymoo's `M = 3` convention and gives 91 reference points. |
 
-The paper's grid is per-dataset, and only D1's row is shipped as the default.
-The other three rows, as `pop_size / cross_rate / mut_rate`, are D2 200 / 0.85 /
-1-124, D3 500 / 0.9 / 1-230, D4 400 / 0.9 / 2-105; pass them explicitly to
-reproduce those datasets.
+The paper tunes the parameters per dataset, and only D1's row is shipped as the
+default. Its Section 8.1 gives the best combination for each dataset, picked
+from the sensitivity grid of its Table 3 (which fixes `num_gens = 100` for all
+four). The other three rows, as `pop_size / cross_rate / mut_rate`, are
+D2 (bottlenose dolphins, 62 nodes) 200 / 0.85 / 1/124, D3 (American college
+football, 115 nodes) 500 / 0.9 / 1/230 and D4 (books about US politics,
+105 nodes) 400 / 0.9 / 2/105, i.e. `1/(2n)`, `1/(2n)` and `2/n`; pass them
+explicitly to reproduce those datasets. Section and table numbers are those of
+the arXiv preprint, arXiv:2005.03181v1; the paywalled published version was not
+checked.
 
 Internal constants:
 
@@ -151,9 +157,18 @@ is *not* a further source of variation, and float accumulation order is fixed:
 `community_stats` compacts community ids in ascending position order, so a given
 labelling always sums its objectives in the same order.
 
-Measured over 30 runs on Zachary karate: AMI 0.2435 ± 0.0120, k = 4.20; over
-300 runs, AMI 0.2455 ± 0.0123 (SEM 0.0007), k = 4.17. Because the module is
-nondeterministic, a refactor of it cannot be checked by comparing outputs: it
+Measured with pymocd 6.1.0 from PyPI (Python 3.10), `krm` at its defaults on
+`nx.karate_club_graph()`, AMI as mean ± sample standard deviation: over 30 runs,
+k = 4.17, AMI 0.5448 ± 0.0422 (SEM 0.0077) against NetworkX's `club` attribute
+and 0.6487 ± 0.0445 (SEM 0.0081) with node 8 moved to the Officer faction, the
+convention of much of the literature; over 300 runs, k = 4.19, AMI
+0.5331 ± 0.0449 (SEM 0.0026) and 0.6376 ± 0.0461 (SEM 0.0027). An earlier
+version of this paragraph gave AMI 0.2435 ± 0.0120 (30 runs) and
+0.2455 ± 0.0123 (300 runs) without naming the reference partition; neither
+convention reproduces those values, while its k (4.20 and 4.17) matches.
+
+Because the module is nondeterministic, a refactor of it cannot be checked by
+comparing outputs: it
 has to be pure code motion, and the check is a distributional A/B — several
 hundred runs before and after, comparing the mean and spread of AMI, `k`, the
 isolated-node count and the rank-1 front length, on karate plus graphs that

@@ -3,7 +3,7 @@
 **Paper**
 Cai, Q., Gong, M., Ma, L., Ruan, S., Yuan, F. & Jiao, L., "Greedy discrete
 particle swarm optimization for large-scale social network clustering",
-*Information Sciences* 316:503–516, 2015. DOI 10.1016/j.ins.2014.10.041.
+*Information Sciences* 316:503–516, 2015. DOI [10.1016/j.ins.2014.09.041](https://doi.org/10.1016/j.ins.2014.09.041).
 
 Objective: Newman, M. E. J. & Girvan, M., "Finding and evaluating community
 structure in networks", *Physical Review E* 69:026113, 2004.

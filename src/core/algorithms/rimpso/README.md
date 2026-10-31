@@ -358,6 +358,14 @@ The result does not depend on how rayon schedules anything.
 
 ## 9. Performance notes
 
+- **Overall cost.** Derived from this implementation, not from the (unpublished)
+  paper: `O(T·P·(n + m + A + P) + (T/L)·P·(m log m + R))` work for `T = num_gens`,
+  `P = pop_size`, `A = archive`, `L = ls_period` and `R` the repair work of one particle,
+  and `O((P + A)·n + W·(n + m))` memory for `W` threads. Flights, seeding and selection
+  run on the Rayon pool; the archive update is sequential. Measured with pymocd 6.1.0 on
+  8 threads, a default run on LFR graphs went from 0.86 s and 18.5 MiB at n = 10k to
+  8.58 s and 163.6 MiB at n = 80k, about linear. Derivation and measurements are in
+  `docs/algorithms/rimpso.md` (*Complexity*).
 - **Incremental counts.** `internal` and `pair_sum` are updated by `relocate` on every node
   move. Integer arithmetic, so no drift; a full rescan is needed only at seeding and after
   a merge sweep.

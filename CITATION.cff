@@ -1,0 +1,52 @@
+cff-version: 1.2.0
+message: >-
+  If you use pymocd in your research, please cite the HP-MOCD paper given
+  under preferred-citation, and state the pymocd version you used. If you use
+  one of the re-implemented baselines, also cite the paper that defines it;
+  see https://csilab.ufop.br/pymocd/citing/.
+type: software
+title: pymocd
+authors:
+  - family-names: Santos
+    given-names: Guilherme O.
+    email: git@guiolvr.com
+version: 6.1.0
+date-released: 2026-10-31
+license: GPL-3.0-or-later
+repository-code: "https://github.com/csilab-ufop/pymocd"
+url: "https://csilab.ufop.br/pymocd/"
+keywords:
+  - community-detection
+  - graph
+  - networks
+  - networkx
+  - multi-objective-optimization
+  - nsga-ii
+  - particle-swarm
+  - modularity
+  - rust
+preferred-citation:
+  type: article
+  title: A high-performance evolutionary multiobjective community detection algorithm
+  authors:
+    - family-names: Santos
+      given-names: Guilherme O.
+    - family-names: Vieira
+      given-names: Lucas S.
+    - family-names: Rossetti
+      given-names: Giulio
+    - family-names: Ferreira
+      given-names: Carlos H. G.
+    - family-names: Moreira
+      given-names: Gladston J. P.
+  journal: Social Network Analysis and Mining
+  volume: 15
+  issue: 1
+  start: 110
+  year: 2025
+  month: 11
+  date-published: 2025-11-18
+  issn: 1869-5469
+  doi: 10.1007/s13278-025-01519-7
+  url: "https://doi.org/10.1007/s13278-025-01519-7"
+  license: CC-BY-4.0

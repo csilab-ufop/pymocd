@@ -185,13 +185,67 @@ always uses the velocity update described above.
 
 ## Complexity
 
-The module README states that modularity is computed in the sparse
-$O(n + m)$ form, for $n$ nodes and $m$ edges, instead of the reference's dense
-double loop. The code evaluates it once per particle for the seed and once per
-particle per generation. Each particle stores a position, a velocity mask and a
-personal best, each of length $n$. Neither the module README nor the function
-docstring states an overall bound on the running time or memory of a run.
-<!-- TODO(docs): overall time/memory complexity of GDPSO — take it from the complexity analysis in Cai et al. (2015), doi:10.1016/j.ins.2014.09.041, or have the maintainer state a bound for this port in src/core/algorithms/gdpso/README.md -->
+Neither the module README nor the function docstring states an overall bound.
+The paper by Cai et al. (2015) is behind the publisher's paywall and was not
+read for this page, so no bound from it is quoted here, and whether this port
+matches the paper's own analysis has not been checked. The bounds below are
+derived from the Rust source of this implementation. Write $n$ for the number
+of nodes, $m$ for the number of edges, $P$ for `pop_size`, $G$ for `num_gens`,
+$L$ for `lpa_sweeps` and $T$ for the number of Rayon threads.
+
+- **Seeding.** Each particle runs $L$ label-propagation sweeps (`lpa_seed` in
+  `swarm/operators.rs`). A sweep reads every node's neighbor list once, so
+  seeding costs $O(P L (n + m))$.
+- **One generation.** For each particle, the velocity update
+  (`swarm/particle.rs`), the degree sums and the relabeling are $O(n)$. The
+  greedy sweep (`local.rs`), the mutation (`swarm/operators.rs`) and the
+  modularity evaluation (`objective.rs`, the sparse form noted under
+  [Divergences](#divergences-from-the-paper)) each read every edge at most
+  twice, $O(n + m)$. Scratch arrays are reset through the list of labels
+  that were touched, not cleared in full. A generation therefore costs
+  $O(P (n + m))$. This includes the global-best election in
+  `swarm/engine.rs`, which copies a length-$n$ vector at most once per
+  improving particle.
+- **Whole run.** $O(P (L + G)(n + m))$ time. Memory is $O((P + T) n + m)$:
+  each particle holds its position and personal best (4 bytes per node each)
+  and its velocity mask (1 byte per node), $9n$ bytes in all; each worker
+  thread holds one scratch workspace (`Workspace` in `swarm/particle.rs`)
+  whose three length-$n$ arrays take $16n$ bytes; and the graph is stored once
+  in compressed sparse row form.
+
+The bound is total work. Seeding and the particle updates of a generation run
+in parallel on the Rayon pool (`into_par_iter` and `par_iter_mut` in
+`swarm/engine.rs`), so with $T$ threads the wall time of a generation is about
+its work divided by $\min(P, T)$. The election between generations is
+sequential.
+
+The scaling was checked on jackal (48 cores, shared with other jobs; Python
+3.10; pymocd 6.1.0 from PyPI) on LFR graphs from
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50, min_community=20, max_community=100, seed=1)`,
+which have $m \approx 5n$. Each setting ran in a fresh interpreter, on one
+thread (`pymocd.max_cores(1)`), and only the `gdpso` call was timed. The
+table gives the two timings of each setting:
+
+| Varied | Fixed | Values | Time (s) |
+|---|---|---|---|
+| $n$ | $P = 20$, $G = 50$ | 10,000 / 20,000 / 40,000 / 80,000 | 0.58–0.59 / 1.31–1.54 / 2.58–2.65 / 5.33–5.56 |
+| $G$ | $n = 20{,}000$, $P = 20$ | 0 / 50 / 100 / 200 | 0.13 / 1.19–1.24 / 2.29–2.39 / 4.46–4.97 |
+| $P$ | $n = 20{,}000$, $G = 50$ | 10 / 20 / 40 / 80 | 0.73–0.83 / 1.31–1.43 / 2.70–2.72 / 5.22–5.42 |
+
+Doubling $n$, $G$ or $P$ about doubles the time, which is the linear growth
+derived above. The setting $n = 20{,}000$, $P = 20$, $G = 50$ appears in all
+three rows; its six timings span 1.19–1.54 s, which is the run-to-run spread
+on the shared machine.
+
+The memory terms were checked from the peak resident set size during the
+call minus the resident size before it. On the $n = 100{,}000$ graph with
+$G = 2$ and one thread, the call added 193 MiB at $P = 200$ and 705 MiB at
+$P = 800$, or 8.96 bytes per node per extra particle, against the 9 bytes
+derived above. At the defaults on the $n = 20{,}000$ graph, 48 threads added
+14.2 MiB more than one thread, against $47 \times 16n$ bytes = 14.3 MiB for
+the extra workspaces. One thread took 30.0–30.7 s there and 48 threads took
+1.45–1.51 s of wall time (43.1 s of CPU time), with other jobs keeping the
+machine's load average at about 24.
 
 ## When to use it
 

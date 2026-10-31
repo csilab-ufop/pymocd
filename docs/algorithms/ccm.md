@@ -135,11 +135,18 @@ replacement genomes of the two customizations and the random tie-breaks inside
 niching change from run to run. The search is sequential, so the thread count
 is not a further source of variation.
 
-The module README reports that 30 runs on Zachary's karate club returned 4
-communities every time, attributes the absence of spread to that graph being
-degenerate, and reports a rank-1 front of roughly 110 ± 30 members on a
-250-node LFR graph.
-<!-- TODO(docs): the ccm README also reports "AMI 0.2398 ± 0.0000" over those 30 karate runs without naming the reference partition; against the networkx `club` attribute the current package gives AMI ≈ 0.567 (≈ 0.671 with node 8 in the other faction). Name the ground truth and re-measure before quoting an AMI on this page. -->
+On Zachary's karate club the runs do not spread. [`ccm`][pymocd.ccm] was run
+30 times with its defaults on `nx.karate_club_graph()` (pymocd 6.1.0 from
+PyPI, Python 3.10, on a shared Linux server with 48 hardware threads), and
+all 30 calls returned the same 4-community partition, with modularity
+$Q = 0.4198$ counted on edges (`weight=None`). Scored with
+[`ami`][pymocd.ami] against the two
+[karate ground-truth conventions](../guide/evaluation.md#the-karate-ground-truth-convention),
+its AMI is 0.5667 ± 0.0000 against NetworkX's `club` attribute and
+0.6712 ± 0.0000 against the convention that puts node 8 with the Officer
+faction; its [`nmi`][pymocd.nmi] is 0.5878 and 0.6873. The module README
+attributes the absence of spread to that graph being degenerate, and reports
+a rank-1 front of roughly 110 ± 30 members on a 250-node LFR graph.
 See [Performance and reproducibility](../guide/performance.md#nondeterministic-detectors)
 for how to handle nondeterministic detectors in experiments.
 
@@ -180,13 +187,24 @@ Every parameter after `graph` is optional, and [`ccm`][pymocd.ccm] and
 
 !!! note "The `mut_rate` default is tuned to a 34-node graph"
     The default is the constant $1/68 \approx 0.0147$ (the stub prints it as
-    `0.014705882352941176`). The module README gives it only as the paper's
-    best combination on the 34-node karate graph, and does not express it as a
-    function of the number of nodes $n$. It is not rescaled for other graphs.
-    Because mutation acts on each gene independently, a child of an $n$-node
-    graph has on average $n \cdot$ `mut_rate` resampled genes, which is $0.5$
-    on karate. To use another rate, pass `mut_rate` explicitly.
-    <!-- TODO(docs): state whether Shaik, Ravi and Deb (2021) give mut_rate for CCM as a rule in n, and whether its Table 3 has per-dataset rows for CCM like the D1-D4 rows the krm module README lists for KRM; source: the paper (doi:10.1007/s42979-020-00382-x), Table 3. -->
+    `0.014705882352941176`). It is not rescaled for other graphs. Because
+    mutation acts on each gene independently, a child of an $n$-node graph has
+    on average $n \cdot$ `mut_rate` resampled genes, which is $0.5$ on karate.
+    To use another rate, pass `mut_rate` explicitly.
+
+    The paper ties the rates it tries to $n$ but picks no single rule. Its
+    Table 3 is the sensitivity grid, one row per dataset and shared by both
+    variants: D1 is karate ($n = 34$), D2 the dolphins (62), D3 college
+    football (115) and D4 the political books (105). Each row tries 100
+    generations, crossover rates 0.8, 0.85 and 0.9, and mutation rates $1/n$,
+    $2/n$ and $1/(2n)$. The best NSGA-III-CCM settings are given in the text of
+    Sec. 8.1, not in Table 3: population sizes 20, 200, 450 and 500 and
+    mutation rates $1/68$, $1/62$, $1/230$ and $2/105$ for D1 to D4, which are
+    $1/(2n)$, $1/n$, $1/(2n)$ and $2/n$. The same sentence lists only three
+    crossover rates, 0.8, 0.85 and 0.9, for the four datasets, so the
+    crossover rate of each dataset cannot be read from it. The default is the
+    D1 rate. These numbers were read from the arXiv preprint (see
+    [Reference](#reference)).
 
 ??? info "Internal constants"
     These are fixed in `src/core/algorithms/ccm/nsga3/normalize.rs` and are not
@@ -215,14 +233,104 @@ A panic reaches Python as `pyo3_runtime.PanicException`, which derives from
 
 ## Complexity
 
-The module README does not state a time or memory complexity bound.
-<!-- TODO(docs): add a complexity bound for NSGA-III-CCM per generation and per run; sources: the paper (doi:10.1007/s42979-020-00382-x) or a derivation by the maintainer from src/core/algorithms/ccm/. -->
-What the code does per run: it evaluates the $N$ initial genomes, then in each
-of `num_gens` generations it evaluates $N$ offspring plus every replacement
-made by the two customizations, and runs environmental selection over $2N$
-individuals. Each evaluation decodes a genome by union-find and computes the
-three objectives in passes over every node's neighbor list. The search runs
-on one thread.
+Neither the module README nor the paper states a bound: the arXiv preprint
+([arXiv:2005.03181v1](https://arxiv.org/abs/2005.03181v1)) has no complexity
+analysis. The bounds below are derived from the source of this
+implementation. Write $N$ for `pop_size`, $G$ for `num_gens`, $H$ for the
+number of reference points ($\binom{p + 2}{2}$ for `divisions` $= p$, so 91 at
+the default), and $n$ and $m$ for the numbers of nodes and edges.
+
+**Time.** This implementation takes $O(N(n + m) + N^2 + NH)$ time per
+generation and $O(G\,[N(n + m) + N^2 + NH])$ per run. With `pop_size` above
+$H$, as the module README asks, $NH < N^2$ and the bound per run is
+$O(G\,[N(n + m) + N^2])$. The search runs on one thread. Three steps make up
+a generation:
+
+- **Evaluation, $O(N(n + m))$.** `new_individual` (`nsga3/individual.rs`)
+  decodes a genome with `locus::decode` (`locus.rs`), a union-find with path
+  compression and union by size, which costs $O(n\,\alpha(n))$; the inverse
+  Ackermann factor $\alpha(n)$ is treated as a constant here. `evaluate`
+  (`objectives.rs`) then calls `community_objectives` and
+  `modularity_labels`, each of which walks every node's neighbor list once. A
+  generation evaluates its $N$ offspring and every individual the two
+  customizations replace (`apply_customizations` in `nsga3/engine.rs`), at
+  most $2N - 1$ more: up to $N - 1$ duplicates, then up to $N$
+  single-community members. Breeding (`breed`, with
+  `locus::uniform_crossover` and `locus::mutate`, which draws once per gene
+  whatever `mut_rate` is), the canonical labelings the duplicate filter
+  hashes, and the single-community test add $O(Nn)$.
+- **Non-dominated sorting, $\Theta(N^2)$.** `fast_non_dominated_sort`
+  (`nsga3/individual.rs`) tests every ordered pair of individuals for
+  dominance. It runs on the $2N$ parents and offspring inside
+  `environmental_selection` (`nsga3/survival.rs`), and again on the $N$
+  survivors after the customizations.
+- **Niching, $O(NH)$.** `niche_select` (`nsga3/niching.rs`) measures the
+  distance from each of the at most $2N$ members of $S_t$ to all $H$ reference
+  lines, and each of its at most $N$ picks scans all $H$ niche counts. The
+  normalization in `nsga3/normalize.rs` is linear in the size of $S_t$ for
+  three objectives.
+
+Outside the loop, `locus::neighbor_positions` costs $O(n + m)$, the initial
+population $N$ evaluations and one sort, and `api.rs` sorts the final
+population once more. `ccm` then computes the modularity of every rank-1
+member, at most $O(N(n + m))$, and converts one partition in $O(n)$;
+`ccm_fronts` converts every rank-1 member, up to $O(Nn)$.
+
+**Memory.** $O(Nn + m + N^2 + H)$. Each individual stores its genome ($n$
+`usize`) and its labels ($n$ `i32`), 12 bytes per node on a 64-bit build, and
+the $2N$ parents and offspring are alive together during breeding and
+environmental selection: about $24Nn$ bytes. The neighbor table holds the
+$2m$ neighbor positions. The domination lists of the sort hold at most one
+entry per pair of individuals, under $2N^2$ for the $2N$-member pool, and the
+duplicate filter's hash set holds up to $N$ canonical labelings ($4Nn$ bytes)
+after the pool is cut back to $N$. Nothing accumulates across generations.
+
+**Measured scaling.** `ccm` was timed on a shared Linux server with 48
+hardware threads (pymocd 6.1.0 from PyPI, Python 3.10), three runs per
+setting, each run in a fresh process. The table gives the median wall time of
+the `ccm` call, the ratio to the previous row, and the added peak memory: the
+median peak resident memory of the three runs minus the median size of the
+process just before the call. The LFR rows use
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50,
+min_community=20, max_community=100, seed=1)`; every parameter not named in
+the table is at its default.
+
+| Varied | Graph | Setting | Median time | Ratio | Added peak memory |
+|---|---|---|---|---|---|
+| $n$ | LFR, $N = 200$, $G = 100$ | $n$ = 500 ($m$ = 2,393) | 0.884 s | | 2.6 MiB |
+| | | $n$ = 1,000 ($m$ = 4,887) | 1.54 s | 1.75 | 5.2 MiB |
+| | | $n$ = 2,000 ($m$ = 9,795) | 3.37 s | 2.18 | 10.5 MiB |
+| | | $n$ = 4,000 ($m$ = 19,667) | 6.31 s | 1.87 | 20.6 MiB |
+| | | $n$ = 8,000 ($m$ = 40,227) | 13.7 s | 2.17 | 41.4 MiB |
+| $G$ | LFR $n$ = 1,000, $N = 200$ | $G$ = 25 | 0.433 s | | 5.2 MiB |
+| | | $G$ = 50 | 0.907 s | 2.09 | 4.9 MiB |
+| | | $G$ = 100 | 1.87 s | 2.06 | 5.6 MiB |
+| | | $G$ = 200 | 3.50 s | 1.87 | 4.9 MiB |
+| $N$ | LFR $n$ = 2,000, $G = 100$ | $N$ = 100 | 1.68 s | | 6.0 MiB |
+| | | $N$ = 200 | 3.46 s | 2.07 | 10.1 MiB |
+| | | $N$ = 400 | 7.36 s | 2.13 | 20.6 MiB |
+| | | $N$ = 800 | 15.0 s | 2.04 | 42.8 MiB |
+| $N$ | karate, $G = 100$ | $N$ = 100 | 0.063 s | | 0.8 MiB |
+| | | $N$ = 200 | 0.179 s | 2.84 | 1.5 MiB |
+| | | $N$ = 400 | 0.734 s | 4.10 | 3.0 MiB |
+| | | $N$ = 800 | 2.29 s | 3.12 | 9.8 MiB |
+| | | $N$ = 1,600 | 8.28 s | 3.62 | 33.4 MiB |
+
+The measurements agree with the bound. Doubling $n$, which also doubles $m$
+on these graphs, multiplied the time by 1.75 to 2.18; the time per unit of
+$G\,N\,(n + m)$ stayed between 13.1 and 15.3 ns with no trend from $n$ = 500
+to 8,000. Memory grew by about 5.3 KiB per node at $N = 200$, close to the
+$24N = 4{,}800$ bytes (4.7 KiB) per node the population accounts for. Time was
+linear in $G$, and memory did not depend on it. At $n$ = 2,000, where
+$n + m$ is about 11,800, doubling $N$ multiplied the time by 2.04 to 2.13 and
+the memory by 1.68 to 2.08: the $N(n + m)$ term dominates and the $N^2$ term
+is not visible up to $N = 800$.
+On karate, where $n + m = 112$, doubling $N$ multiplied the time by 2.8 to
+4.1, the $N^2$ term of non-dominated sorting, and memory grew faster than
+linearly from $N = 400$ on, as the $O(N^2)$ domination lists predict. The
+server was shared, so repeated timings vary: the setting $n$ = 1,000,
+$N = 200$, $G = 100$ took 1.54 s in the $n$ sweep and 1.87 s in the $G$
+sweep, run at a different time.
 
 ## When to use it
 
@@ -322,7 +430,16 @@ Social Networks." *SN Computer Science* 2(1), article 1, 2021 (published online
 
 The volume, issue, article number and dates follow the Crossref record of the
 DOI.
-<!-- TODO(docs): the module READMEs src/core/algorithms/ccm/README.md, src/core/algorithms/krm/README.md and src/core/algorithms/README.md cite "SN Computer Science 2:13"; Crossref gives article number 1 for this DOI, and article 13 of SN Comput. Sci. 2(1) is doi:10.1007/s42979-020-00407-5. Confirm on the publisher's page and fix the READMEs. -->
+
+The published article is not open access. The paper's parameter grid and best
+settings quoted in the [`mut_rate` note](#parameters), and the absence of a
+complexity bound, were read from the open preprint instead: Shaik Tanveer ul
+Huq, Vadlamani Ravi and Kalyanmoy Deb, arXiv:2005.03181v1, 7 May 2020,
+[arXiv:2005.03181v1](https://arxiv.org/abs/2005.03181v1). There, Sec. 8.1 is
+on p. 10 and Table 3 on p. 13. The "Sec. 4" cited for the two customizations
+under [Search](#search) follows the module README; in the preprint, Sec. 4
+lists the duplicate filter among the contributions and Sec. 6.5 describes
+both customizations.
 
 ```bibtex
 @article{Shaik_2020,

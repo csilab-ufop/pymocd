@@ -29,8 +29,8 @@ partition; the front itself is not exposed.
 | **Selection rule** | MOCD-Q: maximum $Q$ (Eq. 3.8). MOCD-D: maximum of the minimum distance to Erdős–Rényi control fronts (Eqs. 3.9–3.11) |
 | **Front accessor** | None; there is no `mocd_fronts` |
 | **Deterministic** | No: there is no seed parameter, and the random generator is seeded from the operating system (module README, *Determinism*) |
-| **Original code** | None published; the module README states that the authors' sites and GitHub were searched and no reference source exists |
-| **Paper** | Shi et al. (2012), *Applied Soft Computing* 12(2):850–859 — [DOI](https://doi.org/10.1016/j.asoc.2011.10.005) |
+| **Original code** | The first author's [publications page](http://www.shichuan.org/html/publications_ch.html) links a C++ archive, `MOGAForClustering28.zip`, as the code of this paper. This port was written from the paper text and has not been compared with that code |
+| **Paper** | Shi et al. (2012), *Applied Soft Computing* 12(2):850–859 — [DOI](https://doi.org/10.1016/j.asoc.2011.10.005); the same publications page links an [article-in-press copy](http://www.shichuan.org/doc/11.pdf) |
 
 </div>
 
@@ -43,22 +43,20 @@ partition; the front itself is not exposed.
     of that paper runs its MOCD baseline with 100 generations, a population of
     100, crossover probability 0.9 and mutation probability 0.1. These are the
     settings of that paper's MOCD baseline, not those of HP-MOCD itself.
-    This budget is **not** the configuration published by Shi et al. (2012), which,
-    as the module README quotes from the paper, uses crossover probability
-    $p_c = 0.6$ and mutation probability $p_m = 0.4$ in every experiment, with
-    population sizes and generation counts set per graph in the paper's
-    Table 1.
+    This budget is **not** the configuration published by Shi et al. (2012),
+    which uses crossover probability $p_c = 0.6$ and mutation probability
+    $p_m = 0.4$ in every experiment ("The parameters pc and pm are fixed for
+    all experiments", §4.3), and sets the internal population size, the
+    archive size and the number of generations per graph in its Table 1.
 
     To run the paper's rates, pass them explicitly, for example
     `pymocd.mocd_q(G, cross_rate=0.6, mut_rate=0.4)`, and, for a graph that
     appears in the paper's Table 1, set `pop_size` and `num_gens` to its
-    values there. The module README states that Table 1 assigns the internal
-    population size, the archive size and the number of generations per
-    graph; the values themselves are not recorded in the repository.
-    <!-- TODO(docs): list Shi et al. (2012) Table 1 (per-graph ipsize / epsize / generations) here; the values are not in src/core/algorithms/mocd/README.md and the paper was not available to the docs writer -->
+    values there; [The paper's settings](#shi-table-1) lists them.
     `pop_size` sets both the internal population and, capped at 100, the
     archive size (see [Parameters](#parameters)), so an archive size that
-    differs from `min(pop_size, 100)` cannot be set.
+    differs from `min(pop_size, 100)` cannot be set. Every column of Table 1
+    follows that rule, so `pop_size` and `num_gens` reproduce it.
 
 ## Objectives
 
@@ -224,6 +222,37 @@ The number of grid divisions per objective is fixed at 8.
 The `cross_rate` and `mut_rate` defaults differ from the paper; see the
 warning at the top of this page.
 
+### The paper's settings {#shi-table-1}
+
+Shi et al. (2012) compare MOCD-Q and MOCD-D with other detectors on ten real
+networks, with the per-graph settings of their Table 1 (§4.2.2), reproduced
+below together with the node and edge counts the table gives. Every run uses
+$p_c = 0.6$ and $p_m = 0.4$, and on these networks the Max–Min Distance rule
+uses one random control front (§4.2.2), that is `rand_networks=1`. The archive
+size `ep` equals `min(ip, 100)` in every column, the rule pymocd uses to
+derive it, so `pop_size` = `ip` and `num_gens` = `gen` reproduce each column.
+
+| Network | Nodes | Edges | `ip` (`pop_size`) | `ep` | `gen` (`num_gens`) |
+|---|---:|---:|---:|---:|---:|
+| Karate (P1) | 34 | 78 | 50 | 50 | 50 |
+| Lesmis (P2) | 77 | 254 | 50 | 50 | 50 |
+| Polbooks (P3) | 105 | 441 | 50 | 50 | 100 |
+| Adjnoun (P4) | 112 | 425 | 50 | 50 | 100 |
+| Football (P5) | 115 | 613 | 50 | 50 | 100 |
+| Celegansneural (P6) | 297 | 2,345 | 100 | 100 | 100 |
+| Celegansmetabolic (P7) | 453 | 2,025 | 100 | 100 | 100 |
+| Netscience (P8) | 1,589 | 2,742 | 200 | 100 | 200 |
+| Power (P9) | 4,941 | 6,594 | 300 | 100 | 300 |
+| Hepth (P10) | 8,361 | 15,751 | 400 | 100 | 400 |
+
+The table spells P6 "Celegansnearal". For example, the paper's MOCD-D run on
+Netscience corresponds to
+`pymocd.mocd_d(G, pop_size=200, num_gens=200, cross_rate=0.6, mut_rate=0.4, rand_networks=1)`.
+The paper's other experiments give their budgets in the text: `ip` = `ep` =
+100 with 800 generations for the hierarchical network (§4.1.1), 200 and 500
+for the overlapping network (§4.1.2), and 100 and 200 for the four-group
+artificial networks (§4.2.1).
+
 ### Degenerate inputs
 
 The module README records the first two behaviors below as known issues that
@@ -245,15 +274,91 @@ published single-threaded method rather than the repository's optimizations.
 It also states that `mocd_d` costs `rand_networks + 1` full searches: the real
 one plus one per control graph, each with the same `pop_size` and `num_gens`.
 
-Within one search, each generation breeds and evaluates `pop_size` children.
-Evaluating a child decodes its genome (a union-find over $n$ links) and then
-visits every node and each of its neighbors once to compute
-$\mathrm{intra}$ and $\mathrm{inter}$. Each parent draw scans the archive for
-the members of the winning cell, inserting a child into the archive tests it
-for dominance against the archive members, and truncation rebuilds the grid
-after each removal. Neither the module README nor the docstrings state an overall
-bound on time or memory.
-<!-- TODO(docs): overall time/memory complexity of Shi-MOCD — take it from Shi et al. (2012), doi:10.1016/j.asoc.2011.10.005, if the paper states one, or have the maintainer state a bound for this port in src/core/algorithms/mocd/README.md -->
+Below, $n$ and $m$ are the numbers of nodes and edges, $P$ is `pop_size`,
+$E = \min(P, 100)$ is the archive capacity, $G$ is `num_gens` and $r$ is
+`rand_networks`. The hyper-grid has a fixed 64 cells. File names are relative
+to `src/core/algorithms/mocd/` unless given in full.
+
+**Time of this implementation.** One generation of `evolutionary_phase`
+(`pesa2/engine.rs`) breeds and evaluates $P$ children. Breeding a child
+(`breed_child`) runs `uniform_crossover` and `mutate` (`operators.rs`) over
+all $n$ genes, and each of its one or two parent draws (`squeeze_tournament`,
+`pesa2/grid.rs`) scans the archive, so it costs $O(n + E)$. Evaluating it
+(`evaluate`, `pesa2/solution.rs`) decodes the genome with a union-find over
+the $n$ links (`decode`, `locus.rs`) and computes both objectives by visiting
+every node and both directions of every edge (`calculate_objectives`,
+`objectives.rs`), so it costs $O(n + m)$. Offering each child to the archive
+(`insert_nondominated`, `pesa2/archive.rs`) scans at most $E + P$ members,
+and `truncate` removes at most $P$ members, rebuilding the grid and rescanning
+the archive after each removal; together these cost $O(P(E + P))$ per
+generation and never read the graph. Seeding the archive costs about one
+generation, and indexing the graph (`NodeIndex::build`, `locus.rs`) costs
+$O(n + m)$ once. Since $E \le P$, one search costs
+
+$$
+O\bigl((G + 1)\,P\,(n + m + P)\bigr).
+$$
+
+`mocd_q` runs one search, converts every front member to a node-to-community
+map (`generate_pareto_front`, `api.rs`), which costs $O(E\,n)$, and returns
+the member of maximum $Q$ (`mocd_q_fn`, `src/api/detectors.rs`). `mocd_d` runs
+$r + 1$ searches. Drawing each Erdős–Rényi control graph (`null_model.rs`)
+takes an expected $O(m)$ edge draws on a sparse graph, and the selection rule
+(`min_max_selection`, `selection.rs`) compares every real front member with
+every control-front member, $O(r E^2)$, so `mocd_d` takes about $r + 1$ times
+as long as `mocd_q`.
+
+**Memory of this implementation.** Every child and every archive member holds
+an $n$-gene genome (`Vec<usize>`, 8 bytes per gene) and, once evaluated, an
+$n$-entry label vector (`Vec<i32>`, 4 bytes per node): about $12n$ bytes. At
+most $E + P$ of them are alive at once, next to the $O(n + m)$ graph and node
+index, so one search needs $O(P\,n + m)$ memory, and the front conversion of
+`mocd_q` another $O(E\,n)$. `mocd_d` also holds all $r$ control graphs and the
+label vectors of $r + 1$ fronts, $O(r\,(n + m + E\,n))$ more.
+
+**What the paper states.** Shi et al. (2012, §4.3) count the evaluation of one
+individual as $O(m + n)$ ($O(m)$ for the objectives, $O(n)$ for the decode),
+the PESA-II process as $O(g s^2)$, citing Corne et al. (2001), and the whole
+method as $O(g s^2 (m + n))$, "which grows linearly with the scale of the
+network", where $g$ is the number of generations and $s$ is both `ipsize` and
+`epsize`. They give Max Q as $O(1)$ and Max–Min Distance as
+$O(g s^2 (m + n))$, and report that MOCD-D, with one control front, takes
+nearly twice as long as MOCD-Q (§4.2.2). This implementation has the paper's per-individual cost, except that
+its decode is a union-find with path halving and no union by rank instead of
+the paper's linear-time backtracking (§3.1.3). Its overall bound is tighter
+than the paper's, because the archive work and the graph work add rather than
+multiply: the archive operations compare objective pairs and grid cells and
+never read the graph. Both bounds are linear in $n + m$ at fixed $P$ and $G$.
+The paper states no memory bound.
+
+**Measured.** The bound was checked on jackal (48 cores, shared; Python
+3.10.12; pymocd 6.1.0 from PyPI). Each call ran in a fresh process on the LFR
+graph
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50, min_community=20, max_community=100, seed=1)`,
+and each time below is the median of three calls. Memory is the rise of the
+process's peak resident set (`ru_maxrss`) over its resident set just before
+the call, in MB of $10^6$ bytes.
+
+| `mocd_q` sweep | Wall time | Log–log slope |
+|---|---|---|
+| $n$ = 1,000 → 32,000 ($m$ = 4,887 → 160,335), defaults | 0.380 s → 13.5 s | 1.02 against $n + m$ |
+| `pop_size` = 25 → 800, $n$ = 2,000, `num_gens=100` | 0.189 s → 6.38 s | 1.03 |
+| `num_gens` = 25 → 400, $n$ = 2,000, `pop_size=100` | 0.189 s → 3.28 s | 1.03 |
+
+Across the $n$ sweep, the time per bred and evaluated child stayed between 6.2
+and 6.9 ns per unit of $n + m$. The time per unit of `pop_size` stayed between
+7.4 and 8.4 ms up to `pop_size=800`, so the $P^2$ archive term did not show at
+these sizes. A `num_gens=0` call, which converts the graph, seeds the archive
+and converts the front, took under 2% of the time of the default run at every
+$n$. At $n$ = 2,000, `mocd_d` took 1.88, 4.00 and 7.16 times as long as
+`mocd_q` with `rand_networks` = 1, 3 and 6, and at $n$ = 8,000 it took 4.26
+times as long with the default 3. Process CPU time matched wall time to within
+2.4% in every call, as expected of a single-threaded engine. Peak memory grew
+linearly with $n$, from 7.8 MB at $n$ = 4,000 to 60.9 MB at $n$ = 32,000 (1.9
+to 2.0 kB per node at `pop_size=100`; below $n$ = 4,000 the rise was as small
+as its run-to-run spread), and at $n$ = 2,000 each unit of
+`pop_size` between 200 and 800 added 11.4 bytes per node, close to the 12
+bytes per node of one genome and its labels.
 
 ## When to use it
 
@@ -280,8 +385,9 @@ bound on time or memory.
 
 ## Divergences from the paper
 
-No reference implementation exists, so the module README lists the following
-as deliberate readings of, or departures from, the paper text:
+The port was written from the paper text, not from the authors' code (see the
+*Original code* row at the top of this page), and the module README lists the
+following as deliberate readings of, or departures from, that text:
 
 - **Uniform crossover.** Shi names the operator "uniform two-point crossover"
   but describes it as an independent per-gene choice between the two parents.

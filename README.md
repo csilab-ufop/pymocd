@@ -13,6 +13,10 @@
 **pymocd**: multi-objective evolutionary community detection for NetworkX and
 igraph graphs, with a parallel Rust core.
 
+```bash
+pip install pymocd
+```
+
 **Documentation: <https://csilab.ufop.br/pymocd/>**
 
 - [Getting started](https://csilab.ufop.br/pymocd/getting-started/) and
@@ -27,5 +31,33 @@ igraph graphs, with a parallel Rust core.
 - [Changelog](https://csilab.ufop.br/pymocd/changelog/),
   [contributing](https://csilab.ufop.br/pymocd/contributing/) and
   [citing pymocd](https://csilab.ufop.br/pymocd/citing/)
+
+### Citation
+
+If you use pymocd in your research, please cite:
+
+> Santos, G. O., Vieira, L. S., Rossetti, G., Ferreira, C. H. G., & Moreira,
+> G. J. P. (2025). A high-performance evolutionary multiobjective community
+> detection algorithm. *Social Network Analysis and Mining*, 15(1), 110.
+> <https://doi.org/10.1007/s13278-025-01519-7>
+
+```bibtex
+@article{Santos2025,
+  author    = {Santos, Guilherme O. and Vieira, Lucas S. and Rossetti, Giulio and Ferreira, Carlos H. G. and Moreira, Gladston J. P.},
+  title     = {A high-performance evolutionary multiobjective community detection algorithm},
+  journal   = {Social Network Analysis and Mining},
+  year      = {2025},
+  volume    = {15},
+  number    = {1},
+  pages     = {110},
+  doi       = {10.1007/s13278-025-01519-7},
+  url       = {https://doi.org/10.1007/s13278-025-01519-7},
+  issn      = {1869-5469},
+  date      = {2025-11-18}
+}
+```
+
+For the re-implemented baselines, also cite their original papers; see
+[Citing pymocd](https://csilab.ufop.br/pymocd/citing/).
 
 pymocd is licensed under the GPL-3.0-or-later.

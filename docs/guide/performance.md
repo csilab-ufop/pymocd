@@ -1,5 +1,5 @@
 ---
-description: How pymocd uses threads, how to size the Rayon thread pool with max_cores, which detectors are deterministic, how RIMPSO's seed works, and how to time a detector.
+description: How pymocd uses threads, how to size the Rayon thread pool with max_cores, which detectors are deterministic, how RIMPSO's seed works, the measured time and memory of each detector, and how to time a detector.
 ---
 
 # Performance and reproducibility
@@ -16,7 +16,8 @@ a different order can change the result of all three (see
 [Input order](#input-order)). The other six draw from a random generator the
 caller cannot seed, and their output can change from call to call. This page
 gives the exact semantics of [`max_cores`][pymocd.max_cores], a per-detector
-determinism table with the source of each statement, and a recipe for timing a
+determinism table with the source of each statement, the measured time and
+peak memory of every detector at three graph sizes, and a recipe for timing a
 detector.
 
 ## Threads
@@ -323,7 +324,9 @@ each algorithm page's *Complexity* section has the details.
   kernel with an $O(n^3)$ eigendecomposition. The README identifies this as
   the cap on the graph sizes the detector can handle; the repository's
   synthetic-network benchmark registers MMCoMO with `max_nodes=2000`. See
-  [MMCoMO › Complexity](../algorithms/mmcomo.md#complexity).
+  [MMCoMO › Complexity](../algorithms/mmcomo.md#complexity), and
+  [Measured time and memory](#measured-time-and-memory) below for its cost at
+  1,000 and 10,000 nodes.
 - **Shi-MOCD**: `mocd_d` runs `rand_networks + 1` full searches, one on the
   graph and one on each random control graph, each with the same `pop_size`
   and `num_gens`. See [Shi-MOCD › Complexity](../algorithms/shi-mocd.md#complexity).
@@ -351,7 +354,98 @@ each algorithm page's *Complexity* section has the details.
   [NSGA-III-CCM](../algorithms/ccm.md#complexity),
   [NSGA-III-KRM](../algorithms/krm.md#complexity) and
   [MOGA-Net](../algorithms/moga-net.md#complexity).
-  <!-- TODO(docs): no module README except MMCoMO's states peak memory, and none states measured runtime scaling with n and m; add a measured scaling table (time and peak RSS per detector at a few graph sizes) once one exists. -->
+
+## Measured time and memory
+
+The two tables below give the wall time and the peak resident memory (RSS)
+of one call of each detector at its default parameters, on LFR graphs of
+1,000, 10,000 and 100,000 nodes. They measure cost only, not the quality of
+the partitions.
+
+**How it was measured.** The graphs came from
+`pymocd.lfr_graph(n, 2.5, 1.5, 0.3, average_degree=10, max_degree=50, min_community=20, max_community=100, seed=1)`;
+their mean degree is 9.8 to 10.0, no node has a degree above 50, and they
+have 20, 233 and 2,268 ground-truth communities. Each call ran in a fresh
+Python process, which built a `networkx.Graph` with the nodes `0` to `n - 1`
+in order and the edges in the sorted order `lfr_graph` returns them, and
+then called the detector once. The time is `time.perf_counter()` around the
+call alone, so it includes reading the networkx graph, building the
+detector's internal graph, building Rayon's thread pool (for the parallel
+detectors) and building the returned dict. The peak RSS is the process's
+`VmHWM` from `/proc/self/status` after the call, with the counter reset just
+before the call (by writing `5` to `/proc/self/clear_refs`). It therefore
+includes the interpreter, networkx and the graph object, whose resident size
+just before the call is the first row of the memory table. A call that took
+under 60 s was run three times, each in its own process, and the tables give
+the median time and the median peak; a time above 60 s is from a single run.
+Each call had a limit of 20 minutes.
+
+The machine was jackal: an AMD Ryzen Threadripper 7960X (24 cores, 48
+logical CPUs) under Linux 6.8, with Python 3.10.12, pymocd 6.1.0 from PyPI
+and networkx 3.4.2. No call to `max_cores` was made and `RAYON_NUM_THREADS`
+was not set, so the four parallel detectors ran on Rayon's default pool of 48
+threads (each such process had 49 threads after the call: the main thread
+and 48 workers) and the other six on one thread. The machine was shared:
+other jobs kept the 1-minute load average between about 11 and 21
+whenever no parallel call of this measurement was running, and the
+measurement ran at nice level 5. The calls ran one at a time, except the
+MMCoMO call at $n$ = 10,000, which ran on one CPU alongside the
+single-threaded calls at $n$ = 10,000 and all the calls at $n$ = 100,000.
+
+Wall time of one call, in seconds:
+
+| Call | Threads | $n$ = 1,000 ($m$ = 4,887) | $n$ = 10,000 ($m$ = 49,851) | $n$ = 100,000 ($m$ = 502,196) |
+|---|---|---|---|---|
+| `rimpso` | 48 | 0.065 | 0.38 | 3.98 |
+| `hpmocd` | 48 | 0.27 | 1.44 | 18.9 |
+| `cdrme` | 48 | 0.027 | 0.71 | 165 |
+| `gdpso` | 48 | 0.10 | 1.16 | 8.40 |
+| `mmcomo` | 1 | 55.6 | > 1,200 (limit) | not run |
+| `ccm` | 1 | 1.64 | 17.6 | 270 |
+| `krm` | 1 | 0.66 | 8.64 | 119 |
+| `mocd_q` | 1 | 0.40 | 4.26 | 61.8 |
+| `mocd_d` | 1 | 1.55 | 16.5 | 249 |
+| `moga_net` | 1 | 0.42 | 4.52 | 70.7 |
+
+Peak RSS of the process during the call, in MiB ($2^{20}$ bytes):
+
+| Call | $n$ = 1,000 | $n$ = 10,000 | $n$ = 100,000 |
+|---|---|---|---|
+| *(resident before the call)* | 32.9 | 44.8 | 168.6 |
+| `rimpso` | 38.8 | 81.0 | 609 |
+| `hpmocd` | 51.2 | 158 | 1,105 |
+| `cdrme` | 40.9 | 134 | 1,865 |
+| `gdpso` | 36.7 | 64.4 | 346 |
+| `mmcomo` | 62.6 | ≥ 2,338 when stopped | not run |
+| `ccm` | 39.0 | 95.3 | 683 |
+| `krm` | 36.3 | 71.3 | 441 |
+| `mocd_q` | 36.0 | 61.9 | 344 |
+| `mocd_d` | 37.8 | 86.8 | 484 |
+| `moga_net` | 41.0 | 117 | 890 |
+
+From $n$ = 10,000 to $n$ = 100,000, ten times the nodes and the edges, the
+time of the five single-threaded detectors other than MMCoMO grew by 13.8 to
+15.6 times, and the memory a call added above the resident size before it
+grew by 7.5 to 10.3 times. `mocd_d` took 3.9 to 4.0 times as long as
+`mocd_q` at every size, in line with its four searches at the default
+`rand_networks=3`. The time of RIMPSO, HP-MOCD and GDPSO grew by 10.6, 13.1
+and 7.3 times. CDRME's grew by 231 times, from 0.71 to 165 s, and the memory
+it added by 19 times (see [CDRME › Complexity](../algorithms/cdrme.md#complexity)).
+MMCoMO took 55.6 s at $n$ = 1,000, where every other detector took under 2 s,
+and did not finish within 20 minutes at $n$ = 10,000. When it was stopped
+its process held 2,338 MiB, about three times the 763 MiB of one dense
+10,000 × 10,000 matrix of 8-byte floats; it was not run at $n$ = 100,000.
+
+At $n$ = 10,000 and 100,000, the CPU time (user plus system) of the parallel
+detectors was 18 to 32 times their wall time; for the single-threaded
+detectors the two agreed to within 1%. Between the three runs of a call, the
+range of the times (slowest minus fastest) was at most 13% of the median for
+the single-threaded detectors and up to 66% for the parallel ones, whose 48
+threads compete with the other jobs for the 48 logical CPUs. The widest
+range in seconds was HP-MOCD's at $n$ = 100,000, from 15.3 to 24.0 s. The
+peak RSS of the three runs differed by less than 10%. These numbers describe
+this machine at this load; on another machine, or with another thread count
+set through [`max_cores`][pymocd.max_cores], measure again as shown below.
 
 ## Timing a detector
 
