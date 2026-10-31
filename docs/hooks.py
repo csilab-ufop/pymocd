@@ -39,7 +39,7 @@ DARK_COLOURS = {
     "#C7D3E6": "#5A6B85",
 }
 
-API_PAGES = ("api/detectors.md", "api/fronts.md", "api/metrics.md")
+API_PAGES = ("api/detectors.md", "api/fronts.md", "api/metrics.md", "api/generators.md")
 DIRECTIVE = re.compile(r"^:::\s+pymocd\.(\w+)\s*$", re.M)
 DEFAULTS_MARKER = re.compile(r"<!--\s*pymocd:defaults\s+([\w. ]+?)\s*-->")
 TODO_MARKER = re.compile(r"<!--\s*TODO\(docs\):\s*(.*?)\s*-->", re.S)

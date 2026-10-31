@@ -176,6 +176,7 @@ nav:
       - Choosing a detector: guide/choosing.md
       - Working with Pareto fronts: guide/fronts.md
       - Evaluating partitions: guide/evaluation.md
+      - Benchmark graphs: guide/benchmarks.md
       - Performance and reproducibility: guide/performance.md
   - Algorithms:
       - algorithms/index.md
@@ -196,6 +197,7 @@ nav:
       - Detectors: api/detectors.md
       - Pareto fronts: api/fronts.md
       - Metrics and utilities: api/metrics.md
+      - Benchmark graphs: api/generators.md
   - Research:
       - Citing pymocd: citing.md
       - Publications: publications.md

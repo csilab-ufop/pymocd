@@ -60,6 +60,53 @@ Changes in behavior to watch for:
 
 Compare: [v6.0.1...master](https://github.com/csilab-ufop/pymocd/compare/v6.0.1...master)
 
+**Added**
+
+- [`lfr_graph`][pymocd.lfr_graph]: LFR benchmark graphs with crisp communities,
+  returned as `(edges, ground_truth)`. It takes the parameters, defaults and
+  validation of NetworkX's `LFR_benchmark_graph`, but wires every node to
+  exactly its drawn degree, with `floor` or `ceil` of `(1 - mu) * k` edges
+  inside its community, rounded at random so that the expected internal total
+  is `(1 - mu)` times the degree sum, and never adds a self-loop. The one
+  exception to the rounding is a community whose internal degrees add up to an
+  odd number with no member that can be rounded the other way: one of its
+  nodes gets one edge more or fewer inside. A node held to its floor because
+  its community cannot hold its ceiling is compensated by rounding up another
+  node: a member of the same community when one can be, otherwise one of
+  another community of the same size, otherwise any node of the communities
+  being placed. When none can be
+  (communities too small for their members' ceilings, such as every degree 2
+  at `mu=0.3` with the default `min_community`), the fraction of edges between
+  communities ends above `mu`, and a `RuntimeWarning` gives the realized
+  fraction and suggests a larger `min_community` (with `max_community` at
+  least as large) whenever the shift exceeds 0.001. With `average_degree`, the degree law is the power law
+  with less weight on its lowest degree, so that its mean is the request
+  exactly. NetworkX's wiring overshoots both the degrees and the mixing
+  ([networkx#6809](https://github.com/networkx/networkx/issues/6809)), and its
+  minimum degree for `average_degree` misses the request. A draw of degrees
+  and community sizes that cannot be wired exactly is replaced by a new one,
+  up to `max_iters` draws or 32 draws' worth of repair work, so the graphs
+  returned are conditioned on a draw that could be completed: on NetworkX's
+  docstring example the mean degree of the returned graphs is 2.3% below the
+  request, and with `tau1=2`, `average_degree=10`, `min_community=20` and the
+  default `max_degree` 9% to 11% below; community sizes, and the degrees of
+  `min_degree` requests, lean the same way. A `RuntimeWarning` reports a mean
+  degree more than four standard errors and 2% away from `average_degree`;
+  `min_degree` requests get none. Whenever NetworkX can place a draw, so can
+  `lfr_graph`. The guide [Benchmark graphs](guide/benchmarks.md) measures what
+  the repairs leave: nodes forced to their floor in communities as small as
+  the smallest degree (with `min_community` at its default and `mu` below one
+  over that degree), the requests where nothing can compensate them, a
+  residual of under 0.001 internal edges per node by community size at
+  `mu=0.05` that shrinks with `n`, and rejected draws that had an exact
+  wiring. Integer values given as floats are accepted for the
+  degree and size bounds; fractional and non-finite values raise
+  `ValueError`. When both generators fail for the same reason, `lfr_graph`
+  raises `RuntimeError` with NetworkX's message. The inputs where the outcome
+  or the message differs, including those on which NetworkX loops forever,
+  are listed in the guide. See also the gallery example
+  [LFR fidelity](examples/benchmarks/plot_lfr_fidelity.md).
+
 **Fixed**
 
 - igraph input: every detector failed on an `igraph.Graph` because the node
