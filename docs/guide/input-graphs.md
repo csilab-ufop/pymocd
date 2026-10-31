@@ -22,7 +22,7 @@ the executed blocks show the behavior on small graphs.
 | Self-loops | Dropped. |
 | Nodes without edges | Kept, with community `-1`. |
 | Node ids | Integers in the signed 32-bit range. Strings, floats and tuples raise an error. |
-| `igraph.Graph` | Read with the same rules, keyed by vertex index ([details](#igraph)). The 6.0.1 release on PyPI fails on igraph input; the fix is not yet released ([Changelog](../changelog.md#unreleased)). |
+| `igraph.Graph` | Read with the same rules, keyed by vertex index ([details](#igraph)). Accepted from 6.1.0; 6.0.1 fails on igraph input ([Changelog](../changelog.md)). |
 
 `mmcomo`, `mmcomo_fronts` and `cdrme` are the exceptions on repeated edges:
 they deduplicate edges while building their own adjacency, so a repeated edge,
@@ -313,15 +313,13 @@ twin.add_edges_from(g.get_edgelist())
 print("same partition as the NetworkX copy:", partition == pymocd.rimpso(twin))
 ```
 
-!!! warning "igraph and the 6.0.1 release on PyPI"
-    In the 6.0.1 release on PyPI, `get_nodes` called `vs.__iter__()` as a method, which
-    igraph's `VertexSeq` does not have, so every detector failed on an
-    `igraph.Graph` with `AttributeError: 'VertexSeq' object has no attribute
-    '__iter__'` (or a `PanicException` wrapping it). With that release,
-    convert the graph first with `g.to_networkx()`, whose node ids are the
-    vertex indices. The fix is not yet released
-    ([Changelog](../changelog.md#unreleased)).
-    <!-- TODO(docs): once the igraph fix is released, name the first version that accepts igraph.Graph in this admonition and in the Summary table. -->
+!!! warning "igraph and pymocd 6.0.1"
+    `igraph.Graph` input works from pymocd 6.1.0. In 6.0.1, `get_nodes`
+    called `vs.__iter__()` as a method, which igraph's `VertexSeq` does not
+    have, so every detector failed on an `igraph.Graph` with
+    `AttributeError: 'VertexSeq' object has no attribute '__iter__'` (or a
+    `PanicException` wrapping it). With 6.0.1, convert the graph first with
+    `g.to_networkx()`, whose node ids are the vertex indices.
 
 ## See also
 

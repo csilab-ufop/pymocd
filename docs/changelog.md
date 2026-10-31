@@ -1,11 +1,11 @@
 ---
-description: Release history of pymocd from v0.0.1 to v6.0.1, with the renamed, removed and re-pointed Python names in each release.
+description: Release history of pymocd from v0.0.1 to v6.1.0, with the renamed, removed and re-pointed Python names in each release.
 ---
 
 # Changelog
 
-This page lists the changes in every tagged release of pymocd, newest first. It
-starts with the work on `master` since the latest tag. Each entry is compiled
+This page lists the changes in every tagged release of pymocd, newest first.
+Each entry is compiled
 from the GitHub release notes, the commits between consecutive tags, and the
 Python names that the extension module registers at each tag. Where an entry
 says so, it also draws on the source distributions published on PyPI. Dates are
@@ -22,7 +22,7 @@ Some names were renamed, removed or re-pointed between releases. The table
 below is derived from the module registration at each tag. "Replacement" is
 filled in only where the release notes or the module source name one.
 
-| Python name | Present in | Status in v6.0.1 | Replacement |
+| Python name | Present in | Status in v6.1.0 | Replacement |
 |---|---|---|---|
 | `scale`, `scale_fronts` | v5.0.1 onward | Deprecated alias of `rimpso`, `rimpso_fronts` | [`rimpso`][pymocd.rimpso], [`rimpso_fronts`][pymocd.rimpso_fronts] |
 | `smocc`, `smocc_fronts` | v5.1.0 | Removed in v6.0.0, no alias | [`rimpso`][pymocd.rimpso], [`rimpso_fronts`][pymocd.rimpso_fronts] |
@@ -56,9 +56,13 @@ Changes in behavior to watch for:
   returning class is NSGA-II with pluggable Python objectives, according to the
   v6.0.0 notes.
 
-## Unreleased
+## [v6.1.0](https://github.com/csilab-ufop/pymocd/releases/tag/v6.1.0) — 2026-10-31
 
-Compare: [v6.0.1...master](https://github.com/csilab-ufop/pymocd/compare/v6.0.1...master)
+Compare: [v6.0.1...v6.1.0](https://github.com/csilab-ufop/pymocd/compare/v6.0.1...v6.1.0) · GitHub release: yes · On PyPI
+
+This release adds an LFR benchmark-graph generator, makes the evaluation
+metrics exact and consistent with scikit-learn, and fixes `igraph.Graph`
+input.
 
 **Added**
 
@@ -167,10 +171,17 @@ Compare: [v6.0.1...master](https://github.com/csilab-ufop/pymocd/compare/v6.0.1.
   class is unreachable from Python.
 - Documentation: the site was rebuilt with a user guide, one page per
   algorithm, an executed examples gallery and research pages.
+- README: now a short pointer into the documentation. Its quickstart,
+  algorithm table, default parameters, front accessors, helpers and citation
+  live on the documentation site instead.
 - Build: the PyO3 requirement moves from 0.29.0 to 0.30.1, and `pyo3-stub-gen`
   0.23.2 is now required for PyO3 0.30.
 - CI: workflows migrated from pip to uv. They then switched to `setup-python`
-  for the interpreter and uv for installs.
+  for the interpreter and uv for installs. The Python test job also installs
+  scikit-learn, so the metric comparisons in `tests/test_metrics.py` run.
+- Docs build: `docs/requirements.txt` pins `pymdown-extensions<12` on Python
+  3.10, where mkdocstrings stops at 1.0.6, which fails with
+  pymdown-extensions 12.
 
 ## [v6.0.1](https://github.com/csilab-ufop/pymocd/tree/v6.0.1) — 2026-09-27
 
