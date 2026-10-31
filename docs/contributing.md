@@ -222,8 +222,8 @@ steps below follow the existing modules; the
    carries the full citation, the objective equations, the representation,
    the search loop, the parameter table, whether the detector is
    bit-deterministic, and every known divergence from its paper. Add a row
-   for it to the table in `src/core/algorithms/README.md` and to the
-   detector table in `README.md`.
+   for it to the table in `src/core/algorithms/README.md`. The top-level
+   `README.md` only points to the documentation, so it needs no change.
 8. **Test it.** Add a case to `tests/test_partitions.py` (a valid partition of
    the karate club graph, plus the front accessor if there is one), add the
    entry point to the `DETECTORS` list in `tests/test_igraph.py` so that it is

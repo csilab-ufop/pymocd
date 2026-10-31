@@ -171,6 +171,9 @@ input.
   class is unreachable from Python.
 - Documentation: the site was rebuilt with a user guide, one page per
   algorithm, an executed examples gallery and research pages.
+- README: now a short pointer into the documentation. Its quickstart,
+  algorithm table, default parameters, front accessors, helpers and citation
+  live on the documentation site instead.
 - Build: the PyO3 requirement moves from 0.29.0 to 0.30.1, and `pyo3-stub-gen`
   0.23.2 is now required for PyO3 0.30.
 - CI: workflows migrated from pip to uv. They then switched to `setup-python`
