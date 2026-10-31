@@ -1,19 +1,33 @@
 # Detectors
 
-Every detector takes a graph and returns a partition as `dict[node, community]`. Isolated nodes are assigned community `-1`.
+Every detector takes a NetworkX or igraph graph (see
+[Input graphs](../guide/input-graphs.md)) and returns one partition as a
+`dict[int, int]` mapping node to community id. Isolated nodes are assigned
+community `-1`. The [Algorithms](../algorithms/index.md) pages describe what
+each method optimizes, the paper it comes from and when to use it.
 
-Two of these are this library's own algorithms — `rimpso` and `hpmocd`. The other eight entry points re-implement published methods by other authors; see [Algorithms](../algorithms.md) for the paper, the selection rule and the original implementation (where the authors released one) behind each.
+<a id="this-librarys-algorithms"></a>
 
-## This library's algorithms
+## This library's methods
 
 ::: pymocd.rimpso
 
 ::: pymocd.hpmocd
 
-!!! note "Tunable HP-MOCD"
-    `hpmocd` takes the graph and nothing else: it runs at the published configuration (`pop_size=100`, `num_gens=100`, `cross_rate=0.7`, `mut_rate=0.5`). The `pymocd.HpMocd` class exposes the same search with those four as constructor arguments, plus `set_objectives` for plugging in your own Python objective functions and `set_on_generation` for a per-generation callback.
+The `HpMocd` class runs the same search as [`hpmocd`][pymocd.hpmocd] with the
+budget as constructor arguments. It also accepts Python objective functions in
+place of the built-in ones and reports progress through a per-generation
+callback; see [HP-MOCD](../algorithms/hpmocd.md) and the
+[custom objectives example](../examples/objectives/plot_custom_objectives.md).
+
+::: pymocd.HpMocd
 
 ## Re-implemented baselines
+
+These entry points port methods published by other authors. Each takes its
+paper's parameters, plus any the port adds where the paper is silent; its
+[algorithm page](../algorithms/index.md#re-implemented-baselines) lists every
+default and says which ones the paper states.
 
 ::: pymocd.cdrme
 
@@ -33,4 +47,9 @@ Two of these are this library's own algorithms — `rimpso` and `hpmocd`. The ot
 
 ## Deprecated aliases
 
-`pymocd.mr_mocd`, `pymocd.mr_mocd_fronts` and `pymocd.mr_mocd_select` are the names this detector carried before it was renamed to RIMPSO; `pymocd.scale` and `pymocd.scale_fronts` are older still. All five are the same function objects as [`rimpso`](#pymocd.rimpso), [`rimpso_fronts`](fronts.md#pymocd.rimpso_fronts) and [`rimpso_select`](fronts.md#pymocd.rimpso_select), kept so pinned callers keep working. They emit no warning and do not appear in the type stubs. Use the new names.
+`pymocd.mr_mocd`, `pymocd.mr_mocd_fronts` and `pymocd.mr_mocd_select` are the
+names RIMPSO carried before it was renamed; `pymocd.scale` and
+`pymocd.scale_fronts` are older still. All five are the same function objects
+as [`rimpso`][pymocd.rimpso], [`rimpso_fronts`][pymocd.rimpso_fronts] and
+[`rimpso_select`][pymocd.rimpso_select], kept so pinned callers keep working.
+They emit no warning and are not in the type stub. Use the new names.

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="3 5 79 79" width="64" height="64">
+  <!-- pymocd favicon: the otter's face from logo.svg / icon.svg, upright.
+       Fur is navy #0F3D75; on dark browser chrome it lifts to the dark-mode tint #8DB3E8. -->
+  <style>
+    .fur { fill: #0F3D75; }
+    @media (prefers-color-scheme: dark) { .fur { fill: #8DB3E8; } }
+  </style>
+  <!-- ears -->
+  <circle class="fur" cx="18" cy="24" r="7"/>
+  <circle class="fur" cx="56" cy="18" r="7"/>
+  <!-- head -->
+  <circle class="fur" cx="40" cy="46" r="31"/>
+  <!-- muzzle -->
+  <ellipse cx="44" cy="56" rx="18" ry="13" fill="#F4E3C6"/>
+  <!-- eyes -->
+  <circle cx="28" cy="40" r="4.5" fill="#101820"/>
+  <circle cx="52" cy="38" r="4.5" fill="#101820"/>
+  <!-- nose -->
+  <path d="M38,50 L50,49 L44,58 Z" fill="#101820"/>
+  <!-- whiskers -->
+  <g stroke="#101820" stroke-width="3" stroke-linecap="round" opacity="0.8">
+    <path d="M22,52 L6,50"/>
+    <path d="M23,57 L8,59"/>
+    <path d="M62,50 L78,47"/>
+    <path d="M63,55 L79,56"/>
+  </g>
+</svg>

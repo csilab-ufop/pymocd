@@ -50,13 +50,15 @@ benchmark-parallelism: build
 benchmark: benchmark-params benchmark-synthetic benchmark-real benchmark-parallelism
 	@echo "Results saved to benchmarks/results/$(BENCHMARK_RUN_ID)/"
 
-docs: dependencies stubs
+# The examples run during the build, so the extension is built first; `build`
+# deletes the stub afterwards, hence the second `stubs`.
+docs: build stubs
 	$(PIP) install -q -r docs/requirements.txt
-	$(VENV)/bin/mkdocs build
+	NO_MKDOCS_2_WARNING=1 $(VENV)/bin/mkdocs build --strict
 
-docs-serve: dependencies stubs
+docs-serve: build stubs
 	$(PIP) install -q -r docs/requirements.txt
-	$(VENV)/bin/mkdocs serve
+	NO_MKDOCS_2_WARNING=1 $(VENV)/bin/mkdocs serve
 
 bump:
 	$(if $(V),,$(error Usage: make bump V=2.0.2))
