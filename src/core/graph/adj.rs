@@ -56,10 +56,11 @@ pub fn get_nodes(graph: &Bound<'_, PyAny>) -> PyResult<Vec<NodeId>> {
     }
 
     if let Ok(vs) = graph.getattr("vs") {
-        let iter_vs = vs.call_method0("__iter__")?;
+        // igraph's VertexSeq iterates through the sequence protocol and has
+        // no `__iter__` method, so it must go through `iter()`.
         let mut nodes: Vec<NodeId> = Vec::new();
 
-        for vertex_obj in iter_vs.try_iter()? {
+        for vertex_obj in vs.try_iter()? {
             let vertex: Bound<'_, PyAny> = vertex_obj?;
             let index: NodeId = vertex.getattr("index")?.extract()?;
             nodes.push(index);
