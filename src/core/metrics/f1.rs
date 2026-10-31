@@ -5,18 +5,17 @@
 //! file, You can obtain one at https://www.gnu.org/licenses/gpl-3.0.html
 
 use super::Contingency;
+use super::contingency::pair_counts;
 
-/// Pairwise F1 of two labelings. This is a pair-counting score, NOT the
+/// Pairwise F1 of two labelings, `2T / (R + C)` with the exact pair counts
+/// of [`pair_counts`]. This is a pair-counting score, NOT the
 /// community-matching F1 some papers report under the same name.
 pub fn f1(ct: &Contingency) -> f64 {
-    let pairs = |x: f64| x * (x - 1.0) / 2.0;
-    let tp: f64 = ct.cells.values().map(|&v| pairs(v)).sum();
-    let pairs_a: f64 = ct.rows.values().map(|&v| pairs(v)).sum();
-    let pairs_b: f64 = ct.cols.values().map(|&v| pairs(v)).sum();
-    if pairs_a + pairs_b == 0.0 {
-        return 1.0; // both all-singletons: trivially identical
+    let (t, r, c) = pair_counts(ct);
+    if r + c == 0 {
+        return 1.0; // no co-clustered pair on either side (n < 2 or both all singletons): 0/0
     }
-    2.0 * tp / (pairs_a + pairs_b)
+    2.0 * t as f64 / (r + c) as f64
 }
 
 #[cfg(test)]
@@ -39,6 +38,13 @@ mod tests {
         let a = vec![0, 0, 1, 1];
         assert!((score(&a, &a) - 1.0).abs() < 1e-12);
         assert!((score(&[0, 0, 1, 1, 2, 2, 3, 3], &[1, 1, 0, 0, 3, 3, 2, 2]) - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn no_co_clustered_pair_on_either_side_is_one() {
+        assert_eq!(score(&[], &[]), 1.0);
+        assert_eq!(score(&[0], &[1]), 1.0);
+        assert_eq!(score(&[0, 1, 2], &[5, 6, 7]), 1.0);
     }
 
     #[test]

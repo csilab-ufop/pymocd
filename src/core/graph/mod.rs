@@ -3,8 +3,6 @@
 //! Copyright 2025 - Guilherme Santos. If a copy of the MPL was not distributed with this
 //! file, You can obtain one at https://www.gnu.org/licenses/gpl-3.0.html
 
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use rustc_hash::FxHashMap;
 
 pub type NodeId = i32;
@@ -53,13 +51,4 @@ pub fn normalize_community_ids(graph: &Graph, partition: Partition) -> Partition
     }
 
     new_partition
-}
-
-/// Read a Python `{node: community}` dict into a [`Partition`].
-pub fn to_partition(py_dict: &Bound<'_, PyDict>) -> PyResult<Partition> {
-    let mut part: FxHashMap<i32, i32> = FxHashMap::default();
-    for (node, comm) in py_dict.iter() {
-        part.insert(node.extract::<NodeId>()?, comm.extract::<CommunityId>()?);
-    }
-    Ok(part)
 }
