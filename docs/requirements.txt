@@ -3,6 +3,9 @@
 mkdocs>=1.6,<2
 mkdocs-material>=9.7
 mkdocstrings[python]>=0.26
+# mkdocstrings 1.0.7+ needs Python 3.11; the 1.0.6 that Python 3.10 resolves
+# breaks every API page with pymdown-extensions 12 (Highlight now requires `md`).
+pymdown-extensions<12; python_version < "3.11"
 mkdocs-gallery>=0.10.4
 markdown-exec>=1.10
 mkdocs-redirects>=1.2

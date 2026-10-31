@@ -159,6 +159,6 @@ plain cargo commands.
 
 ### A detector fails on an `igraph.Graph`
 
-The 6.0.1 release on PyPI cannot read `igraph.Graph` input; this is not an
-installation issue, and the fix is not yet released. See
-[Input graphs](input-graphs.md#igraph) for the workaround with that release.
+pymocd 6.0.1 cannot read `igraph.Graph` input; this is not an installation
+issue. Upgrade to 6.1.0 or later (`pip install -U pymocd`), or see
+[Input graphs](input-graphs.md#igraph) for the workaround with 6.0.1.

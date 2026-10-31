@@ -119,18 +119,20 @@ HP-MOCD-parity benchmark budget, **not** Shi's published configuration, which
 is `cross_rate=0.6`, `mut_rate=0.4` with per-graph population and generation
 counts from the paper's Table 1. Pass those explicitly to reproduce the paper.
 
-`hpmocd(G)` takes the graph only and runs at its published configuration; for
-a tunable HP-MOCD, or to plug in your own Python objective functions, use the
-`pymocd.HpMocd` class instead.
+`hpmocd(G)` takes the graph only and runs with crossover 0.7 and mutation 0.5,
+which are not the paper's settings (0.8 and 0.2, *SNAM* 15:110, Table 1). To
+run the paper's configuration, tune it, or plug in your own Python objective
+functions, use the `pymocd.HpMocd` class, e.g.
+`pymocd.HpMocd(G, cross_rate=0.8, mut_rate=0.2).run()`.
 
 #### Pareto fronts
 
-Seven of the eleven entry points expose the candidate set their selection
+Six of the ten detector entry points expose the candidate set their selection
 rule picks from:
 
 ```python
-fronts = pymocd.rimpso_fronts(G)    # list[dict[node, community]]
-fronts = pymocd.hpmocd_fronts(G)
+partitions, points, selected = pymocd.rimpso_fronts(G)
+fronts = pymocd.hpmocd_fronts(G)    # list[dict[node, community]], as below
 fronts = pymocd.mmcomo_fronts(G)
 fronts = pymocd.ccm_fronts(G)
 fronts = pymocd.krm_fronts(G)
@@ -157,13 +159,22 @@ stubs. Use the new names.
 ```python
 pymocd.max_cores(8)                  # set Rayon thread pool (first call wins)
 
-# Fast native ground-truth agreement metrics between two {node: community}
-# dicts, computed over their shared nodes
+# Native ground-truth agreement metrics between two {node: community} dicts,
+# computed over their shared nodes (ValueError if they share none). NMI, AMI
+# and ARI follow scikit-learn's definitions (arithmetic-mean normalisation);
+# AMI's expected mutual information is evaluated without cancellation
 nmi, ami, ari, f1 = pymocd.gt_metrics(partition, gt)
 pymocd.nmi(partition, gt)            # or each metric individually
 pymocd.ami(partition, gt)
 pymocd.ari(partition, gt)
 pymocd.f1(partition, gt)             # pairwise F1
+
+# LFR benchmark graphs with a planted ground truth: networkx's parameters,
+# but wired so the realized degrees and mixing match the request
+edges, gt = pymocd.lfr_graph(1000, tau1=2.5, tau2=1.5, mu=0.3, average_degree=20,
+                             max_degree=50, min_community=20, max_community=100, seed=1)
+G = nx.Graph(edges)
+print(pymocd.ami(pymocd.rimpso(G), gt))
 ```
 
 ### Contributing
