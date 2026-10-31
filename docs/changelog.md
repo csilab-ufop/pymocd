@@ -66,9 +66,54 @@ Compare: [v6.0.1...master](https://github.com/csilab-ufop/pymocd/compare/v6.0.1.
   reader called `VertexSeq.__iter__()`, which igraph does not define. The
   reader now iterates the vertex sequence directly, and `tests/test_igraph.py`
   covers every detector.
+- [`ami`][pymocd.ami] of two identical all-singleton labelings returned
+  rounding noise instead of `1.0`: `0.0` for 2 and 4 nodes, `0.99982` for 14
+  and `1.0071` for 309. Identical partitions now score exactly `1.0`.
+- [`ami`][pymocd.ami] computed its log-factorials with an approximation
+  accurate to about $2\times10^{-10}$ and summed the expected mutual
+  information term by term. Its error grew with the number of nodes: for
+  $10^4$ singletons against singletons plus one pair, whose exact AMI is 0, it
+  returned $-2.0\times10^{-4}$. AMI is now evaluated in a form in which no sum
+  cancels (see [Definitions](guide/evaluation.md#definitions)). Against 40- and
+  60-digit reference values it was within $3\times10^{-16}$ on every input
+  checked, up to $2\times10^6$ nodes, including labelings that are nearly all
+  singletons on both sides, where scikit-learn is up to $10^{-4}$ off at $10^4$
+  nodes (see
+  [Agreement with scikit-learn](guide/evaluation.md#agreement-with-scikit-learn)).
+- [`nmi`][pymocd.nmi] drifted from the exact value by up to $7\times10^{-11}$
+  on labelings of $10^6$ to $10^7$ nodes because of plain summation, and could
+  return `1.0000000000000002` for identical labelings. It now uses compensated
+  summation and takes the logarithm of a ratio close to 1 from the exact
+  integer difference; it was within $1.2\times10^{-16}$ of the exact value on
+  those labelings and on nearly constant labelings of up to $2\times10^6$
+  nodes.
+- [`ari`][pymocd.ari] lost precision to cancellation when both labelings were
+  nearly one community (an absolute error of $2\times10^{-12}$ at $1.4\times10^4$
+  nodes and $2\times10^{-9}$ at $2.8\times10^7$), and returned `nan` for fewer
+  than two shared nodes. It now uses exact integer pair counts, returns the
+  same float as scikit-learn's `adjusted_rand_score`, and returns `1.0` for
+  one shared node and for two empty dicts.
+- [`gt_metrics`][pymocd.gt_metrics] returned `(0.0, 0.0, 0.0, 0.0)` when the
+  two dicts share no node, while the single functions returned `1.0`, `1.0`,
+  `nan` and `1.0`. Since nothing is scored then, all five now raise
+  `ValueError`, unless both dicts are empty, which scores `1.0` as
+  scikit-learn does for empty labelings. The usual cause is node ids of
+  different types, such as `str` ids read from a file against a detector's
+  `int` ids, which used to raise `TypeError` and would otherwise match no
+  node now that any hashable id is accepted.
 
 **Changed**
 
+- The metric functions accept any hashable node ids and community labels,
+  matched as dict keys are; integers outside the signed 32-bit range, strings
+  and floats used to raise `OverflowError` or `TypeError`.
+- [`ami`][pymocd.ami], and with it [`gt_metrics`][pymocd.gt_metrics], sums
+  the expected mutual information over distinct community sizes instead of
+  every pair of communities. Three inputs of $10^5$ and $10^6$ nodes that
+  took 5.5 to 587 s now take under 0.1 s.
+- NMI, AMI and ARI follow scikit-learn's special cases (for example, AMI is
+  `0.0` when exactly one labeling is a single community), and AMI is exactly
+  `0.0` when exactly one labeling is all singletons.
 - The type stub `pymocd.pyi` now includes the `HpMocd` class and precise
   return types for `rimpso`, `rimpso_fronts`, `mmcomo`, `mmcomo_fronts` and
   `hpmocd_fronts`; the `hpmocd_fronts` docstring no longer says the `HpMocd`
