@@ -10,8 +10,8 @@ authors:
   - family-names: Santos
     given-names: Guilherme O.
     email: git@guiolvr.com
-version: 6.1.0
-date-released: 2026-10-31
+version: 6.1.1
+date-released: 2026-11-01
 license: GPL-3.0-or-later
 repository-code: "https://github.com/csilab-ufop/pymocd"
 url: "https://csilab.ufop.br/pymocd/"
