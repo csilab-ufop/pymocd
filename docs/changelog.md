@@ -85,6 +85,13 @@ Changes in behavior to watch for:
   which takes no parameters, could not run the paper's setting. To reproduce
   results obtained with 6.1.0 or earlier, use
   `HpMocd(G, cross_rate=0.7, mut_rate=0.5).run()`.
+- **Shi-MOCD defaults to its paper's rates.** [`mocd_q`][pymocd.mocd_q] and
+  [`mocd_d`][pymocd.mocd_d] now default to `cross_rate=0.6` and
+  `mut_rate=0.4`, the rates of every experiment of Shi et al. (2012). Up to
+  6.1.0 they defaulted to 0.9 and 0.1, the MOCD-baseline setting of the
+  HP-MOCD benchmark of
+  [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7); pass
+  `cross_rate=0.9, mut_rate=0.1` for that setting.
 
 ## [v6.1.0](https://github.com/csilab-ufop/pymocd/releases/tag/v6.1.0) — 2026-10-31
 

@@ -34,63 +34,20 @@ partition; the front itself is not exposed.
 
 </div>
 
-!!! warning "The defaults are not Shi's configuration"
+!!! note "The paper's rates, a per-graph budget"
     [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d] default to
-    `pop_size=100`, `num_gens=100`, `cross_rate=0.9` and `mut_rate=0.1`. Their
-    docstrings call this the repository's HP-MOCD-parity benchmark budget, and
-    the module README attributes it to the HP-MOCD benchmark of
-    [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7): Table 1
-    of that paper runs its MOCD baseline with 100 generations, a population of
-    100, crossover probability 0.9 and mutation probability 0.1. These are the
-    settings of that paper's MOCD baseline, not those of HP-MOCD itself.
-    This budget is **not** the configuration published by Shi et al. (2012),
-    which uses crossover probability $p_c = 0.6$ and mutation probability
-    $p_m = 0.4$ in every experiment ("The parameters pc and pm are fixed for
-    all experiments", §4.3), and sets the internal population size, the
-    archive size and the number of generations per graph in its Table 1.
-
-    To run the paper's rates, pass them explicitly, for example
-    `pymocd.mocd_q(G, cross_rate=0.6, mut_rate=0.4)`, and, for a graph that
-    appears in the paper's Table 1, set `pop_size` and `num_gens` to its
-    values there; [The paper's settings](#shi-table-1) lists them.
-    `pop_size` sets both the internal population and, capped at 100, the
-    archive size (see [Parameters](#parameters)), so an archive size that
-    differs from `min(pop_size, 100)` cannot be set. Every column of Table 1
-    follows that rule, so `pop_size` and `num_gens` reproduce it.
-
-## Objectives
-
-Let $G = (V, E)$ be the graph with $m = |E|$ edges, $C = \{c_1, \dots, c_k\}$
-a partition of $V$, $l_c$ the number of edges with both endpoints in $c$ (each
-counted once), and $d_c = \sum_{i \in c} \deg(i)$ the total degree of $c$, to
-which every internal edge contributes twice. Shi-MOCD minimizes the pair of
-Shi et al. (2012), Eqs. 3.5 and 3.6:
-
-$$
-\mathrm{intra}(C) = 1 - \frac{1}{m} \sum_{c \in C} l_c,
-\qquad
-\mathrm{inter}(C) = \sum_{c \in C} \left( \frac{d_c}{2m} \right)^{2}.
-$$
-
-The pair is an exact decomposition of the modularity of
-[Newman & Girvan (2004)](https://doi.org/10.1103/PhysRevE.69.026113)
-(Shi Eq. 3.7):
-
-$$
-Q(C) = 1 - \mathrm{intra}(C) - \mathrm{inter}(C).
-$$
-
-The module README warns that the names are easy to misread:
-$\mathrm{intra}$ is *one minus* the fraction of internal edges, so minimizing
-it maximizes internal edges, and $\mathrm{inter}$ is the degree-concentration
-(null-model) term, which a single-community partition drives to 1.
-Fragmenting a partition lowers $\mathrm{inter}$ and raises $\mathrm{intra}$;
-coarsening does the reverse. The module README identifies this trade-off as
-the reason the Pareto front spans the range of resolutions.
-
-The objectives count edges. Edge weights are not read, and self-loops are
-dropped when the graph is converted. These are the same two objectives that
-[HP-MOCD](hpmocd.md) optimizes by default, with NSGA-II.
+    `cross_rate=0.6` and `mut_rate=0.4`, the crossover and mutation rates of
+    Shi et al. (2012), which "are fixed for all experiments" (§4.3). The paper
+    sets the internal population, the archive size and the number of
+    generations per graph in its Table 1, so to reproduce one of its runs, set
+    `pop_size` and `num_gens` to the values listed in
+    [The paper's settings](#shi-table-1). `pop_size` sets both the internal
+    population and, capped at 100, the archive size (see
+    [Parameters](#parameters)); every column of Table 1 follows that rule.
+    Up to 6.1.0 the defaults were `cross_rate=0.9` and `mut_rate=0.1`, the
+    setting of the MOCD baseline in the HP-MOCD benchmark of
+    [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7); pass
+    them explicitly for that setting.
 
 ## Search
 
@@ -196,7 +153,7 @@ from 0. Isolated nodes are reported as community `-1`.
     call to `mocd_q` and a call to `mocd_d` on the same graph therefore select
     from the fronts of two independent searches, and `mocd_d` also draws new
     control graphs on every call. The module README reports that over 20 runs
-    on the Florentine families graph, `mocd_d` returned between 2 and 7
+    on the Florentine families graph, `mocd_d` returned between 2 and 4
     communities while `mocd_q` returned 3 every time, and attributes the
     spread to the control fronts rather than to the search.
 
@@ -218,8 +175,8 @@ One table covers both functions; `rand_networks` belongs to `mocd_d` only.
 |---|---|---|
 | `pop_size` | `100` | PESA-II internal population size: the number of random genomes in the seed population and of children bred per generation. Also sets the archive capacity to `min(pop_size, 100)`. Values below 1 are raised to 1. |
 | `num_gens` | `100` | Number of generations. `0` returns a selection from the seeded archive. |
-| `cross_rate` | `0.9` | Probability that a variation step that does not mutate applies uniform crossover to two random children. Must lie in $[0, 1]$. Shi et al. use `0.6`. |
-| `mut_rate` | `0.1` | Probability that a variation step mutates one random child, on top of the mutation every child receives when it is copied from the archive. A step does nothing with probability $\max(0, 1 - \texttt{cross\_rate} - \texttt{mut\_rate})$. Must lie in $[0, 1]$. Shi et al. use `0.4`. |
+| `cross_rate` | `0.6` | Probability that a variation step that does not mutate applies uniform crossover to two random children. Must lie in $[0, 1]$. Shi et al.'s value. |
+| `mut_rate` | `0.4` | Probability that a variation step mutates one random child, on top of the mutation every child receives when it is copied from the archive. A step does nothing with probability $\max(0, 1 - \texttt{cross\_rate} - \texttt{mut\_rate})$. Must lie in $[0, 1]$. Shi et al.'s value. |
 | `rand_networks` | `3` | `mocd_d` only. Number of Erdős–Rényi control graphs; each one costs a full evolutionary run with the same budget. The module README attributes the value 3 to Shi §3.2, which uses three control fronts for the artificial networks (and one for the timed real-network runs). |
 
 The archive capacity (`epsize` in PESA-II) is not a parameter: it is derived
@@ -228,8 +185,8 @@ cap of 100 encodes the largest archive in Shi's Table 1, and that the archive
 of 200 used in the paper's §4.1.2 cannot be reached through the public API.
 The number of grid divisions per objective is fixed at 10.
 
-The `cross_rate` and `mut_rate` defaults differ from the paper; see the
-warning at the top of this page.
+The `cross_rate` and `mut_rate` defaults are the paper's; `pop_size` and
+`num_gens` are per graph in the paper (below).
 
 ### The paper's settings {#shi-table-1}
 
@@ -377,9 +334,9 @@ bytes per node of one genome and its labels.
   baselines (ports of other authors' published methods), and the two
   functions implement Shi's two selection rules on the same search. For new
   analyses, start from [Choosing a detector](../guide/choosing.md).
-- **To follow the paper, pass its configuration.** The defaults are a
-  benchmark budget (the docstrings' HP-MOCD-parity budget), not Shi's
-  settings; see the warning at the top of this page.
+- **To follow the paper, pass its budget.** The rates default to Shi's;
+  the population and the number of generations are per graph in the paper
+  (see the note at the top of this page).
 - **MOCD-Q or MOCD-D.** MOCD-Q needs one search and selects by modularity.
   MOCD-D selects by distance from a random-graph reference rather than by
   modularity, but costs `rand_networks + 1` searches, and the module README

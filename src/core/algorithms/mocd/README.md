@@ -153,13 +153,12 @@ every experiment in the paper (§4.3). `rand_networks = 3` is Shi §3.2, which
 generates three control fronts for the artificial networks (the timed
 real-network runs use one, §4.2.2).
 
-The Python wrappers `pymocd.mocd_q` / `pymocd.mocd_d` do **not** use those
-defaults. They pass `BENCH_CROSS_RATE = 0.9` and `BENCH_MUT_RATE = 0.1`, the
-HP-MOCD benchmark budget (Santos et al. 2025), so that the baseline is compared
-under the same settings as the rest of the repository. To reproduce Shi's
-published configuration, pass `cross_rate=0.6, mut_rate=0.4` explicitly along
-with the per-graph `ipsize`/`epsize`/generation counts from Shi Table 1, and
-`rand_networks=1` for MOCD-D on these networks:
+The Python wrappers `pymocd.mocd_q` / `pymocd.mocd_d` use the same rates.
+(Up to 6.1.0 they passed 0.9 and 0.1, the MOCD-baseline setting of the HP-MOCD
+benchmark of Santos et al. 2025; pass `cross_rate=0.9, mut_rate=0.1` for that
+setting.) To reproduce a column of Shi's Table 1, pass its
+`ipsize`/generation counts as `pop_size`/`num_gens`, and `rand_networks=1` for
+MOCD-D on these networks:
 
 | Network (Table 1) | n | m | `ip` = `pop_size` | `ep` | `gen` = `num_gens` |
 |---|---:|---:|---:|---:|---:|
@@ -201,20 +200,19 @@ order-fixed — a sorted node order, `Vec` accumulators, first-seen relabelling,
 a single-threaded loop, no rayon anywhere — so the RNG stream is the only source
 of run-to-run variation.
 
-Measured on karate over 30 runs: `mocd_q` AMI 0.2450 ± 0.0112, k = 4.00
-(reference distribution); `mocd_d` AMI 0.2898 ± 0.0402, k = 2.80 ± 1.60.
-MOCD-D is markedly the noisier of the two, because its answer depends on
-`rand_networks` freshly drawn random graphs as well as on its own front. On
-florentine over 20 runs `mocd_d` returns k ∈ {2, 3, 4, 7} (10/7/2/1) while
-`mocd_q` returns k = 3 every time — the spread is the control fronts, not the
-search.
+Measured with the defaults on karate over 30 runs (AMI against networkx's
+`club` split): `mocd_q` AMI 0.5667 ± 0.0000, k = 4.00 ± 0.00; `mocd_d` AMI
+0.6161 ± 0.0592, k = 2.47 ± 0.51. MOCD-D is the noisier of the two, because its
+answer depends on `rand_networks` freshly drawn random graphs as well as on its
+own front. On florentine over 20 runs `mocd_d` returns k ∈ {2, 3, 4} (13/4/3)
+while `mocd_q` returns k = 3 every time — the spread is the control fronts, not
+the search.
 
-The *selected* partition is nevertheless stable on small graphs even though the
-search is not: across independent builds and runs, `mocd_q` reproduces
-byte-identical output on karate, florentine and a two-clique graph with isolated
-nodes, and only diverges on lesmis. That is the objective landscape of a small
-graph, not determinism — treat those three digests as a regression gate, never
-as a guarantee.
+The *selected* partition is often stable on small graphs even though the search
+is not: over 10 calls, `mocd_q` returned one partition on florentine and on a
+two-clique graph with isolated nodes, two partitions on karate (both with 4
+communities and the same AMI) and ten different ones on lesmis. That is the
+objective landscape of a small graph, not determinism.
 
 **Divergences**
 This module was written from the paper text; where the text is silent on the
@@ -264,8 +262,7 @@ These are deliberate readings of, or departures from, the paper text:
   single-threaded method rather than the repository's optimizations. Hot-path
   state is dense `Vec`-indexed; the shared `Partition` map is built only at the
   API boundary.
-- **`epsize` is derived, not exposed** (see **Parameters**), and the wrapper
-  functions ship the HP-MOCD benchmark rates rather than Shi's.
+- **`epsize` is derived, not exposed** (see **Parameters**).
 - **MOCD-Q lives outside this module.** The max-`Q` argmin is in
   `api/detectors.rs`; the module surface stops at the front. MOCD-D, which needs
   the control-front machinery, is `Mocd::run` here.
@@ -303,7 +300,7 @@ Recorded, deliberately **not** fixed — behaviour is frozen for this module.
 |---|---|
 | `mod.rs` | Module root: submodule wiring and the `Mocd` / defaults re-export. |
 | `api.rs` | The `Mocd` pyclass: construction, `generate_pareto_front` (the MOCD-Q candidate set), `run` (MOCD-D), and the dense-labels → `Partition` boundary conversion. |
-| `defaults.rs` | The shipped defaults, the `EPSIZE_CAP`, and the wrapper-only benchmark rates. |
+| `defaults.rs` | The shipped defaults (Shi's rates) and the `EPSIZE_CAP`. |
 | `locus.rs` | `NodeIndex` (node order + legal alleles), `Genome`, random initialization, union-find `decode`. |
 | `objectives.rs` | `calculate_objectives` → `Metrics { intra, inter }`, Shi Eqs. 3.5/3.6. |
 | `operators.rs` | In-place uniform crossover, neighbour-restricted mutation and `mutation_size` (the authors' `GA::setMaxCluster`). |
