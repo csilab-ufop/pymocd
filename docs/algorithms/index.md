@@ -49,7 +49,7 @@ fixed when results must be reproduced (see
 | [NSGA-III-CCM](ccm.md) | maximum modularity $Q$ on the rank-1 front | [`ccm_fronts`][pymocd.ccm_fronts] | no | none published |
 | [NSGA-III-KRM](krm.md) | maximum modularity $Q$ on the rank-1 front | [`krm_fronts`][pymocd.krm_fronts] | no | none published |
 | [GDPSO](gdpso.md) | the best position the swarm ever held | none (single objective) | yes; no `seed` argument | [doctor-cai/GDPSO](https://github.com/doctor-cai/GDPSO), C++, no license file |
-| [Shi-MOCD](shi-mocd.md) | `mocd_q`: maximum modularity $Q$ (Shi Eq. 3.8); `mocd_d`: the member whose minimum distance to Erdős–Rényi control fronts is largest (Shi Eqs. 3.9–3.11) | none exposed | no | none published |
+| [Shi-MOCD](shi-mocd.md) | `mocd_q`: maximum modularity $Q$ (Shi Eq. 3.8); `mocd_d`: the member whose minimum distance to Erdős–Rényi control fronts is largest (Shi Eqs. 3.9–3.11) | none exposed | no | `MOGAForClustering28.zip`, a Visual C++ archive linked from the [first author's publications page](http://www.shichuan.org/html/publications_ch.html) |
 | [MOGA-Net](moga-net.md) | maximum modularity $Q$ on the rank-1 front (Pizzuti Sec. V-E) | [`moga_net_fronts`][pymocd.moga_net_fronts] | no | [Moganet2016.zip](https://staff.icar.cnr.it/pizzuti/codice/Moganet2016.zip), MATLAB shipped as obfuscated P-code |
 
 Each algorithm also has a module README next to its source code, with the full
@@ -164,7 +164,7 @@ diverges from it.
 
 ### Original code
 
-Reference code exists for three of the seven, according to their module
+Reference code exists for four of the seven, according to their module
 READMEs:
 
 - **MOGA-Net**: [Moganet2016.zip](https://staff.icar.cnr.it/pizzuti/codice/Moganet2016.zip)
@@ -178,11 +178,15 @@ READMEs:
   [`res/original_algs/cdrme`](https://github.com/csilab-ufop/pymocd/tree/master/res/original_algs/cdrme),
   converted to plain Python. It was consulted only to disambiguate what the
   paper leaves open, and four of its choices were deliberately not reproduced.
+- **Shi-MOCD**: the [first author's publications page](http://www.shichuan.org/html/publications_ch.html)
+  links `MOGAForClustering28.zip`, a Visual C++ project, as the code of the
+  paper. The port was written from the paper text; its breeding step and grid
+  resolution, which the paper leaves open, follow that code.
 
-No original code was published for MMCoMO, NSGA-III-CCM, NSGA-III-KRM or
-Shi-MOCD. For MMCoMO, NSGA-III-KRM and Shi-MOCD, the module READMEs state that
-the authors' sites and GitHub were searched, so only the papers' text and
-tables constrain those ports.
+No original code was published for MMCoMO, NSGA-III-CCM or NSGA-III-KRM. For
+MMCoMO and NSGA-III-KRM, the module READMEs state that the authors' sites and
+GitHub were searched, so only the papers' text and tables constrain those
+ports.
 
 ### Fronts and single-objective baselines
 
