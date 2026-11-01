@@ -1,5 +1,5 @@
 ---
-description: Release history of pymocd from v0.0.1 to v6.1.0, with the renamed, removed and re-pointed Python names in each release.
+description: Release history of pymocd from v0.0.1 to v6.1.1, with the renamed, removed and re-pointed Python names in each release.
 ---
 
 # Changelog
@@ -22,7 +22,7 @@ Some names were renamed, removed or re-pointed between releases. The table
 below is derived from the module registration at each tag. "Replacement" is
 filled in only where the release notes or the module source name one.
 
-| Python name | Present in | Status in v6.1.0 | Replacement |
+| Python name | Present in | Status in v6.1.1 | Replacement |
 |---|---|---|---|
 | `scale`, `scale_fronts` | v5.0.1 onward | Deprecated alias of `rimpso`, `rimpso_fronts` | [`rimpso`][pymocd.rimpso], [`rimpso_fronts`][pymocd.rimpso_fronts] |
 | `smocc`, `smocc_fronts` | v5.1.0 | Removed in v6.0.0, no alias | [`rimpso`][pymocd.rimpso], [`rimpso_fronts`][pymocd.rimpso_fronts] |
@@ -56,9 +56,15 @@ Changes in behavior to watch for:
   returning class is NSGA-II with pluggable Python objectives, according to the
   v6.0.0 notes.
 
-## Unreleased
+## [v6.1.1](https://github.com/csilab-ufop/pymocd/releases/tag/v6.1.1) — 2026-11-01
 
-### Fixed
+Compare: [v6.1.0...v6.1.1](https://github.com/csilab-ufop/pymocd/compare/v6.1.0...v6.1.1) · GitHub release: yes · On PyPI
+
+This release fixes the breeding step of Shi-MOCD and sets the defaults of
+Shi-MOCD and HP-MOCD to the settings of their papers. Both detectors return
+different partitions than in 6.1.0 for the same inputs.
+
+**Fixed**
 
 - **Shi-MOCD breeds as its authors' implementation does.** Up to 6.1.0,
   [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d] applied `mut_rate`
@@ -74,7 +80,7 @@ Changes in behavior to watch for:
   vertices correctly at $z_{\mathrm{out}} = 4$ (6.1.0: 0.80; paper: 1.0).
   Partitions differ from those of 6.1.0 for the same inputs.
 
-### Changed
+**Changed**
 
 - **HP-MOCD runs the setting of its paper.** The defaults of
   [`hpmocd`][pymocd.hpmocd], [`hpmocd_fronts`][pymocd.hpmocd_fronts] and

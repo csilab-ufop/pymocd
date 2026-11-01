@@ -258,7 +258,7 @@ Author
 :   Guilherme O. Santos, as in `pyproject.toml`
 
 Version
-:   6.1.0, released on 31 October 2026, the release the file was written
+:   6.1.1, released on 1 November 2026, the release the file was written
     for. If you used another version, give the one printed by
     `version("pymocd")` [above](#report-the-version-you-used).
 
