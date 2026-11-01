@@ -109,11 +109,11 @@ pub fn hpmocd_fronts_fn(py: Python<'_>, graph: &Bound<'_, PyAny>) -> PyResult<Py
 /// decomposed-modularity objectives (intra/inter). Returns the
 /// **max-modularity** member of the Pareto front (MOCD-Q selection, Shi Eq. 3.8).
 ///
-/// Defaults (pop=100, gen=100, C_R=0.9, M_R=0.1) are the repo's HP-MOCD-parity
-/// benchmark budget, NOT Shi's published configuration — that is pc=0.6,
-/// pm=0.4 with per-graph population, archive and generation counts from
-/// Table 1. Pass the rates, ``pop_size`` and ``num_gens`` via kwargs; the
-/// archive size is not a parameter, it is derived as ``min(pop_size, 100)``.
+/// ``cross_rate`` and ``mut_rate`` default to Shi's published rates (pc=0.6,
+/// pm=0.4, fixed for every experiment of the paper). The paper sets the
+/// population, archive and generation counts per graph (Table 1); pass
+/// ``pop_size`` and ``num_gens`` to reproduce a column. The archive size is not
+/// a parameter, it is derived as ``min(pop_size, 100)``.
 ///
 /// Args:
 ///     graph: networkx.Graph or igraph.Graph with integer node ids; edges are
@@ -122,16 +122,18 @@ pub fn hpmocd_fronts_fn(py: Python<'_>, graph: &Bound<'_, PyAny>) -> PyResult<Py
 ///         and the children bred per generation. Also sets the archive
 ///         capacity to ``min(pop_size, 100)``.
 ///     num_gens: number of generations.
-///     cross_rate: probability that a child is the uniform crossover of two
-///         parents rather than a copy of one. Must lie in [0, 1].
-///     mut_rate: per-gene probability of redrawing the gene uniformly from the
-///         node's neighbours. Must lie in [0, 1].
+///     cross_rate: probability that a variation step which does not mutate
+///         applies uniform crossover to two children. Must lie in [0, 1].
+///     mut_rate: probability that a variation step mutates one child. Every
+///         child is also mutated once when copied from the archive; a
+///         mutation redraws a fixed, size-dependent number of genes (the
+///         authors' implementation). Must lie in [0, 1].
 ///
 /// Returns:
 ///     ``dict[node, community]``. Isolated nodes get community ``-1``.
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(name = "mocd_q", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::BENCH_CROSS_RATE, mut_rate = mocd::BENCH_MUT_RATE))]
+#[pyo3(name = "mocd_q", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::DEFAULT_CROSS_RATE, mut_rate = mocd::DEFAULT_MUT_RATE))]
 pub fn mocd_q_fn(
     graph: &Bound<'_, PyAny>,
     pop_size: usize,
@@ -163,11 +165,11 @@ pub fn mocd_q_fn(
 /// 2012, Eqs. 3.9–3.11): returns the Pareto-front member whose (intra, inter)
 /// deviates most from ``rand_networks`` same-scale Erdős–Rényi control fronts.
 ///
-/// Defaults (pop=100, gen=100, C_R=0.9, M_R=0.1) are the repo's HP-MOCD-parity
-/// benchmark budget, NOT Shi's published configuration — that is pc=0.6,
-/// pm=0.4 with per-graph population, archive and generation counts from
-/// Table 1. Pass the rates, ``pop_size`` and ``num_gens`` via kwargs; the
-/// archive size is not a parameter, it is derived as ``min(pop_size, 100)``.
+/// ``cross_rate`` and ``mut_rate`` default to Shi's published rates (pc=0.6,
+/// pm=0.4, fixed for every experiment of the paper). The paper sets the
+/// population, archive and generation counts per graph (Table 1); pass
+/// ``pop_size`` and ``num_gens`` to reproduce a column. The archive size is not
+/// a parameter, it is derived as ``min(pop_size, 100)``.
 ///
 /// Args:
 ///     graph: networkx.Graph or igraph.Graph with integer node ids; edges are
@@ -176,10 +178,12 @@ pub fn mocd_q_fn(
 ///         and the children bred per generation. Also sets the archive
 ///         capacity to ``min(pop_size, 100)``.
 ///     num_gens: number of generations.
-///     cross_rate: probability that a child is the uniform crossover of two
-///         parents rather than a copy of one. Must lie in [0, 1].
-///     mut_rate: per-gene probability of redrawing the gene uniformly from the
-///         node's neighbours. Must lie in [0, 1].
+///     cross_rate: probability that a variation step which does not mutate
+///         applies uniform crossover to two children. Must lie in [0, 1].
+///     mut_rate: probability that a variation step mutates one child. Every
+///         child is also mutated once when copied from the archive; a
+///         mutation redraws a fixed, size-dependent number of genes (the
+///         authors' implementation). Must lie in [0, 1].
 ///     rand_networks: number of Erdős–Rényi control graphs (same nodes and
 ///         edge count as the input); each costs a full run with the same budget.
 ///
@@ -187,7 +191,7 @@ pub fn mocd_q_fn(
 ///     ``dict[node, community]``. Isolated nodes get community ``-1``.
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(name = "mocd_d", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::BENCH_CROSS_RATE, mut_rate = mocd::BENCH_MUT_RATE, rand_networks = mocd::MOCD_D_RAND_NETWORKS))]
+#[pyo3(name = "mocd_d", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::DEFAULT_CROSS_RATE, mut_rate = mocd::DEFAULT_MUT_RATE, rand_networks = mocd::MOCD_D_RAND_NETWORKS))]
 pub fn mocd_d_fn(
     graph: &Bound<'_, PyAny>,
     pop_size: usize,

@@ -183,7 +183,7 @@ steps below follow the existing modules; the
     ///     ``dict[node, community]``. Isolated nodes get community ``-1``.
     #[gen_stub_pyfunction]
     #[pyfunction]
-    #[pyo3(name = "mocd_q", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::BENCH_CROSS_RATE, mut_rate = mocd::BENCH_MUT_RATE))]
+    #[pyo3(name = "mocd_q", signature = (graph, pop_size = mocd::DEFAULT_POP_SIZE, num_gens = mocd::DEFAULT_NUM_GENS, cross_rate = mocd::DEFAULT_CROSS_RATE, mut_rate = mocd::DEFAULT_MUT_RATE))]
     pub fn mocd_q_fn(
         graph: &Bound<'_, PyAny>,
         pop_size: usize,

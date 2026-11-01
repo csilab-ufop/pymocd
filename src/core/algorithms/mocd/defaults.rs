@@ -11,6 +11,4 @@ pub const DEFAULT_CROSS_RATE: f64 = 0.6;
 pub const DEFAULT_MUT_RATE: f64 = 0.4;
 pub const EPSIZE_CAP: usize = 100;
 
-pub const BENCH_CROSS_RATE: f64 = 0.9;
-pub const BENCH_MUT_RATE: f64 = 0.1;
 pub const MOCD_D_RAND_NETWORKS: usize = 3;

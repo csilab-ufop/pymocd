@@ -194,12 +194,11 @@ and [`mocd_d`][pymocd.mocd_d] are multi-objective but expose no front accessor
 either; the two names run the same PESA-II search under Shi's two published
 model-selection rules.
 
-!!! warning "Shi-MOCD defaults are not Shi's"
-    [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d] default to this
-    repository's HP-MOCD-parity benchmark budget (`cross_rate=0.9`,
-    `mut_rate=0.1`), not to the paper's `pc=0.6`, `pm=0.4` with per-graph
-    population and generation counts from its Table 1. Pass those explicitly
-    to reproduce the paper.
+!!! note "Shi-MOCD budgets are per graph"
+    [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d] default to the
+    paper's crossover and mutation rates (`cross_rate=0.6`, `mut_rate=0.4`).
+    The paper sets the population and the number of generations per graph
+    (its Table 1); pass `pop_size` and `num_gens` to reproduce a column.
 
 ## Deprecated aliases
 

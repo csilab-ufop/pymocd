@@ -6,11 +6,11 @@
 use rand::RngExt;
 
 use crate::core::algorithms::mocd::locus::{Genome, NodeIndex, random_genome};
-use crate::core::algorithms::mocd::operators::{mutate, uniform_crossover};
+use crate::core::algorithms::mocd::operators::{mutate, mutation_size, uniform_crossover};
 use crate::core::graph::Graph;
 
 use super::archive::{insert_nondominated, truncate};
-use super::grid::{GRID_DIVISIONS, assign_cells, squeeze_tournament};
+use super::grid::{GRID_DIVISIONS, assign_cells, select_member};
 use super::solution::{Member, Solution, evaluate};
 
 /// Runs PESA-II and returns the final external archive as the Pareto front.
@@ -28,10 +28,15 @@ pub fn evolutionary_phase(
         return Vec::new();
     }
 
+    for p in [cross_rate, mut_rate] {
+        assert!((0.0..=1.0).contains(&p), "p={p:?} is outside range [0.0, 1.0]");
+    }
+
     let idx = NodeIndex::build(graph);
     let degrees: Vec<usize> = idx.index_to_node.iter().map(|n| graph.degree(n)).collect();
     let ipsize = pop_size.max(1);
     let epsize = ep_size.max(1);
+    let genes = mutation_size(idx.n());
 
     let mut rng = rand::rng();
 
@@ -46,12 +51,9 @@ pub fn evolutionary_phase(
         assign_cells(&mut ep, GRID_DIVISIONS, &mut occ);
         let occupied = occupied_cells(&occ);
 
-        let mut new_ip: Vec<Genome> = Vec::with_capacity(ipsize);
-        for _ in 0..ipsize {
-            new_ip.push(breed_child(
-                &ep, &occ, &occupied, &idx, cross_rate, mut_rate, &mut rng,
-            ));
-        }
+        let new_ip = breed(
+            &ep, &occ, &occupied, &idx, ipsize, cross_rate, mut_rate, genes, &mut rng,
+        );
 
         let evaluated: Vec<Member> = new_ip
             .into_iter()
@@ -106,24 +108,46 @@ fn occupied_cells(occ: &[usize]) -> Vec<usize> {
         .collect()
 }
 
-fn breed_child(
+/// One generation of offspring, as the authors' `GA::runGA` breeds it:
+/// `ipsize` clones of archive members, each taken from a uniformly random
+/// occupied cell and mutated; then `ceil(ipsize / 2)` variation steps, each of
+/// which mutates one random clone with probability `mut_rate` or else, with
+/// probability `cross_rate`, crosses two distinct random clones in place.
+#[allow(clippy::too_many_arguments)]
+fn breed(
     ep: &[Member],
     occ: &[usize],
     occupied: &[usize],
     idx: &NodeIndex,
+    ipsize: usize,
     cross_rate: f64,
     mut_rate: f64,
+    genes: usize,
     rng: &mut impl rand::Rng,
-) -> Genome {
-    let mut child = if rng.random_bool(cross_rate) {
-        let p1 = squeeze_tournament(ep, occ, occupied, rng);
-        let p2 = squeeze_tournament(ep, occ, occupied, rng);
-        uniform_crossover(&p1.genome, &p2.genome, rng)
-    } else {
-        squeeze_tournament(ep, occ, occupied, rng).genome.clone()
-    };
-    mutate(&mut child, idx, mut_rate, rng);
-    child
+) -> Vec<Genome> {
+    let mut ip: Vec<Genome> = (0..ipsize)
+        .map(|_| {
+            let mut g = select_member(ep, occ, occupied, rng).genome.clone();
+            mutate(&mut g, idx, genes, rng);
+            g
+        })
+        .collect();
+    for _ in (0..ipsize).step_by(2) {
+        let r: f64 = rng.random();
+        if r < mut_rate {
+            let i = rng.random_range(0..ipsize);
+            mutate(&mut ip[i], idx, genes, rng);
+        } else if r < cross_rate + mut_rate && ipsize >= 2 {
+            let i = rng.random_range(0..ipsize);
+            let mut j = rng.random_range(0..ipsize - 1);
+            if j >= i {
+                j += 1;
+            }
+            let (head, tail) = ip.split_at_mut(i.max(j));
+            uniform_crossover(&mut head[i.min(j)], &mut tail[0], rng);
+        }
+    }
+    ip
 }
 
 #[cfg(test)]
@@ -154,6 +178,35 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn breed_returns_ipsize_legal_genomes() {
+        let g = two_triangles();
+        let idx = NodeIndex::build(&g);
+        let degrees: Vec<usize> = idx.index_to_node.iter().map(|n| g.degree(n)).collect();
+        let mut rng = rand::rng();
+        let mut ep: Vec<Member> = (0..10)
+            .map(|_| evaluate(&g, &idx, &degrees, random_genome(&idx, &mut rng)))
+            .collect();
+        let mut occ = Vec::new();
+        assign_cells(&mut ep, GRID_DIVISIONS, &mut occ);
+        let occupied = occupied_cells(&occ);
+        for ipsize in [1, 2, 7, 30] {
+            let ip = breed(&ep, &occ, &occupied, &idx, ipsize, 0.6, 0.4, 3, &mut rng);
+            assert_eq!(ip.len(), ipsize);
+            for genome in &ip {
+                for (i, &a) in genome.iter().enumerate() {
+                    assert!(idx.neighbor_candidates[i].contains(&a));
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "outside range")]
+    fn rate_outside_unit_interval_panics() {
+        evolutionary_phase(&two_triangles(), 0, 5, 10, 10, 1.5, 0.4);
     }
 
     #[test]

@@ -7,8 +7,9 @@ use rand::RngExt;
 
 use super::solution::Member;
 
-/// Hyper-grid resolution per objective axis (Corne et al. 2001).
-pub const GRID_DIVISIONS: usize = 8;
+/// Hyper-grid resolution per objective axis: `NICHSIZE` of the authors'
+/// implementation, a 10 x 10 grid for the two objectives.
+pub const GRID_DIVISIONS: usize = 10;
 
 /// Each axis is normalised to the range the members *currently* span, so the
 /// grid moves with the archive and must be rebuilt after any change to it.
@@ -47,27 +48,17 @@ pub fn assign_cells(members: &mut [Member], divisions: usize, occ: &mut Vec<usiz
     }
 }
 
-/// PESA-II region selection (Corne et al. 2001). The tournament is over
-/// *cells*, not over members: a sparse cell wins however few members it holds.
-pub fn squeeze_tournament<'a>(
+/// Region-based selection as the authors' implementation performs it: a
+/// uniformly random *occupied* cell, then a uniformly random member of it. A
+/// sparse cell is as likely to be drawn as a crowded one, which spreads the
+/// parents along the front.
+pub fn select_member<'a>(
     ep: &'a [Member],
     occ: &[usize],
     occupied: &[usize],
     rng: &mut impl rand::Rng,
 ) -> &'a Member {
-    let ci = occupied[rng.random_range(0..occupied.len())];
-    let cj = occupied[rng.random_range(0..occupied.len())];
-    let cell = match occ[ci].cmp(&occ[cj]) {
-        std::cmp::Ordering::Less => ci,
-        std::cmp::Ordering::Greater => cj,
-        std::cmp::Ordering::Equal => {
-            if rng.random_bool(0.5) {
-                ci
-            } else {
-                cj
-            }
-        }
-    };
+    let cell = occupied[rng.random_range(0..occupied.len())];
     let k = rng.random_range(0..occ[cell]);
     ep.iter()
         .filter(|m| m.cell == cell)

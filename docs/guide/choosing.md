@@ -143,12 +143,12 @@ gap and its module README says so: for example, MMCoMO's `beta`, the
 `alpha_mut` are not given in their papers. Three cases need attention:
 
 - **Shi-MOCD.** [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d]
-  default to this repository's HP-MOCD-parity benchmark budget
-  (`cross_rate=0.9`, `mut_rate=0.1`). To reproduce
-  [Shi et al. (2012)](https://doi.org/10.1016/j.asoc.2011.10.005), pass
-  `cross_rate=0.6`, `mut_rate=0.4` and the per-graph sizes of their Table 1.
-  The archive size is not a parameter: the module README states that it is
-  derived as `min(pop_size, 100)`.
+  default to the rates of
+  [Shi et al. (2012)](https://doi.org/10.1016/j.asoc.2011.10.005)
+  (`cross_rate=0.6`, `mut_rate=0.4`), but the paper sets the population and
+  the number of generations per graph: pass the sizes of its Table 1 as
+  `pop_size` and `num_gens`. The archive size is not a parameter: the module
+  README states that it is derived as `min(pop_size, 100)`.
 - **NSGA-III-KRM.** The paper gives a parameter row per dataset, and only the
   row for its first dataset (Zachary's karate club) is the default. The module
   README lists the other rows; see the [NSGA-III-KRM page](../algorithms/krm.md).
