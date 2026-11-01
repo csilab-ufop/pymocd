@@ -6,5 +6,7 @@
 pub const DEFAULT_DEBUG_LEVEL: i8 = 0;
 pub const DEFAULT_POP_SIZE: usize = 100;
 pub const DEFAULT_NUM_GENS: usize = 100;
-pub const DEFAULT_CROSS_RATE: f64 = 0.7;
-pub const DEFAULT_MUT_RATE: f64 = 0.5;
+// Crossover and mutation probabilities of the paper's experiments (Santos et al. 2025,
+// Sec. 5.1 and Table 1): C_P = 0.8, M_P = 0.2.
+pub const DEFAULT_CROSS_RATE: f64 = 0.8;
+pub const DEFAULT_MUT_RATE: f64 = 0.2;

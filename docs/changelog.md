@@ -56,6 +56,20 @@ Changes in behavior to watch for:
   returning class is NSGA-II with pluggable Python objectives, according to the
   v6.0.0 notes.
 
+## Unreleased
+
+### Changed
+
+- **HP-MOCD runs the setting of its paper.** The defaults of
+  [`hpmocd`][pymocd.hpmocd], [`hpmocd_fronts`][pymocd.hpmocd_fronts] and
+  [`HpMocd`][pymocd.HpMocd] are now `cross_rate=0.8` and `mut_rate=0.2`, the
+  crossover and mutation probabilities of the experiments of
+  [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7)
+  (Sec. 5.1 and Table 1). Up to 6.1.0 they were 0.7 and 0.5, and `hpmocd`,
+  which takes no parameters, could not run the paper's setting. To reproduce
+  results obtained with 6.1.0 or earlier, use
+  `HpMocd(G, cross_rate=0.7, mut_rate=0.5).run()`.
+
 ## [v6.1.0](https://github.com/csilab-ufop/pymocd/releases/tag/v6.1.0) — 2026-10-31
 
 Compare: [v6.0.1...v6.1.0](https://github.com/csilab-ufop/pymocd/compare/v6.0.1...v6.1.0) · GitHub release: yes · On PyPI
