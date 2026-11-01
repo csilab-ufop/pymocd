@@ -22,9 +22,11 @@ The first author's publications page
 copy of the paper (http://www.shichuan.org/doc/11.pdf). The archive is a
 Visual C++ project whose `GA` class keeps the IP/EP populations, offers Q's two
 components as objectives, and implements both the Max-Q and the Max–Min
-Distance selection. This module was written from the paper text and has not
-been compared with that code. Every equation below is taken from the paper
-text; every choice the paper leaves open is listed under **Divergences**.
+Distance selection. This module was written from the paper text; the breeding
+step (`GA::runGA`, `GA::mutate`, `GA::crossover2`, `GA::setMaxCluster`) and the
+grid resolution (`NICHSIZE`) follow that code where the paper leaves them open.
+Every equation below is taken from the paper text; every choice the paper
+leaves open is listed under **Divergences**.
 
 **Objectives**
 Notation over `G = (V, E)` with `m = |E|` (`graph.edges` holds each undirected
@@ -93,20 +95,23 @@ and the mating pool.
       normalized to the range `EP` *currently* spans, and rebuilds the per-cell
       occupancy `occ` — the squeeze factors. The grid is adaptive: it is rebuilt
       from scratch each time `EP` changes.
-   b. `breed_child`, `ipsize` times. With probability `cross_rate` the child is
-      a `uniform_crossover` of two parents, otherwise a clone of one; every
-      parent comes from `squeeze_tournament`. `mutate` is then applied to every
-      child, crossed or cloned.
+   b. `breed`, as the authors' `GA::runGA` does it: `ipsize` clones of archive
+      members, each drawn by `select_member` and mutated once; then
+      `ceil(ipsize / 2)` variation steps, each of which `mutate`s one random
+      clone with probability `mut_rate` or else, with probability
+      `cross_rate`, runs `uniform_crossover` in place on two distinct random
+      clones. A mutation redraws `mutation_size(n)` random genes from their
+      neighbours (`GA::setMaxCluster`: n/2, n/3, n/5, n/50, n/200 or n/1000 for
+      n below 20, 50, 100, 1000, 10000 and above).
    c. Evaluate the children and offer each to `EP` via `insert_nondominated`.
    d. If `EP` overflows, `truncate` back to `epsize`.
 4. `evolutionary_phase` returns `EP` as the Pareto front.
 
-`squeeze_tournament` is PESA-II's region-based selection and the piece most
-often reduced to plain tournament selection: it draws **two occupied cells**,
-keeps the one with the lower squeeze factor (ties by coin flip), and only then
-draws a member uniformly from inside the winner. A cell with one member beats a
-cell with twenty regardless of how good those twenty are, which is what spreads
-the archive along the front.
+`select_member` is the region-based selection of the authors' code: a
+uniformly random **occupied cell**, then a uniformly random member of it. A cell
+with one member is drawn as often as a cell with twenty, which is what spreads
+the parents along the front. (Corne et al. 2001 hold a binary tournament
+between two occupied cells instead.)
 
 `truncate` is the mirror image: repeatedly pick a most-crowded cell (ties
 uniformly), drop a uniformly random member of it, and **rebuild the grid**
@@ -139,8 +144,8 @@ Python module — see **Known issues**):
 | `rand_networks` | 3 | MOCD-D control fronts. Read only by `run()`; ignored by `generate_pareto_front()`. Each one costs a **full** evolutionary run. |
 | `pop_size` | 100 | PESA-II `ipsize`. Floored at 1 internally. |
 | `num_gens` | 100 | Generations. `0` returns the seeded archive. |
-| `cross_rate` | 0.6 | Probability a child is a crossover rather than a parent clone. |
-| `mut_rate` | 0.4 | Per-gene probability of redrawing the allele from the position's neighbours. |
+| `cross_rate` | 0.6 | Probability that a variation step which does not mutate crosses two clones. |
+| `mut_rate` | 0.4 | Probability that a variation step mutates one clone (every clone is also mutated once when copied). |
 
 `cross_rate = 0.6` / `mut_rate = 0.4` are Shi §4.2.2, introducing Table 1:
 *"pc and pm are 0.6 and 0.4 for these four EA based algorithms"* — fixed across
@@ -179,7 +184,7 @@ Internal constants a reader will hit:
 |---|---|---|---|
 | `EPSIZE_CAP` | 100 | `defaults.rs` | Upper bound on the derived `ep_size`. |
 | `MOCD_D_RAND_NETWORKS` | 3 | `defaults.rs` | Control-front count for the `mocd_d` wrapper. |
-| `GRID_DIVISIONS` | 8 | `pesa2/grid.rs` | Hyper-grid bins per objective axis, so 64 cells for two objectives. |
+| `GRID_DIVISIONS` | 10 | `pesa2/grid.rs` | Hyper-grid bins per objective axis, so 100 cells for two objectives (`NICHSIZE` of the authors' code). |
 
 `epsize` is **not** a public parameter. It is derived once in `Mocd::new` as
 `pop_size.clamp(1, EPSIZE_CAP)`, i.e. `min(pop_size, 100)` with a floor of 1.
@@ -212,16 +217,29 @@ graph, not determinism — treat those three digests as a regression gate, never
 as a guarantee.
 
 **Divergences**
-This module was written from the paper text, not from the authors' code (see
-**Original implementation**), so these are deliberate readings of, or
-departures from, the paper text:
+This module was written from the paper text; where the text is silent on the
+breeding step it follows the authors' code (see **Original implementation**).
+These are deliberate readings of, or departures from, the paper text:
 
+- **The breeding step follows the authors' code.** The paper says only that
+  mutation reassigns "some genes" and that `pm` is "the ratio of mutation". Up
+  to 6.1.0 this module read `pm` as a per-gene probability, which at Shi's
+  `pm = 0.4` redraws 40% of every child and stalls the search (on the paper's
+  four-group benchmark, MOCD-Q identified 0.70 of the vertices correctly at
+  z_out = 5 against the paper's 1.0). `GA::runGA` instead mutates every clone
+  once with `GA::setMaxCluster(n)` genes, then applies one operator per pair
+  of children: mutation with probability `pm`, otherwise crossover with
+  probability `pc`. With that step the same benchmark gives 0.92.
 - **"Uniform two-point crossover" is implemented as per-gene uniform
-  crossover.** Shi names the operator that way but describes it functionally as
-  an independent per-position choice between the two parents, which is uniform
-  crossover, not classic two-segment crossover. Either reading is safe for this
-  encoding — an allele inherited at its own position is legal in either parent —
-  so the functional description was followed over the name.
+  crossover**, as the authors' `GA::crossover2` does it: a random mask swaps
+  each position between the two clones in place. An allele kept at its own
+  position is legal in either parent, so no repair is needed.
+- **The archive is PESA-II's, not the authors' `GA::update`.** That function
+  uses a dominance test that is strict in both objectives and, on a full
+  archive, swaps the candidate for a member of a more crowded cell. This module
+  keeps Corne et al.'s rule (reject a dominated candidate, truncate an overfull
+  archive from its most crowded cell); on the four-group benchmark the two
+  gave the same accuracy.
 - **Union-find decode instead of the paper's backtracking.** Same connected
   components, so the same partition; only the identifiers differ, and those are
   compacted to first-seen order anyway.
@@ -288,11 +306,11 @@ Recorded, deliberately **not** fixed — behaviour is frozen for this module.
 | `defaults.rs` | The shipped defaults, the `EPSIZE_CAP`, and the wrapper-only benchmark rates. |
 | `locus.rs` | `NodeIndex` (node order + legal alleles), `Genome`, random initialization, union-find `decode`. |
 | `objectives.rs` | `calculate_objectives` → `Metrics { intra, inter }`, Shi Eqs. 3.5/3.6. |
-| `operators.rs` | Uniform crossover and neighbour-restricted mutation. |
+| `operators.rs` | In-place uniform crossover, neighbour-restricted mutation and `mutation_size` (the authors' `GA::setMaxCluster`). |
 | `null_model.rs` | `generate_random_networks`: the Erdős–Rényi `G(n, m)` control graphs MOCD-D scores against. |
 | `selection.rs` | `min_max_selection`, the MOCD-D decision rule (Eqs. 3.9–3.11). |
 | `pesa2/mod.rs` | PESA-II sub-module root. |
 | `pesa2/solution.rs` | `Solution` (labels + objectives) and its dominance test, `Member` (genome + solution + grid cell), and `evaluate`. |
-| `pesa2/grid.rs` | The adaptive hyper-grid: `GRID_DIVISIONS`, `assign_cells`, `squeeze_tournament`. |
+| `pesa2/grid.rs` | The adaptive hyper-grid: `GRID_DIVISIONS`, `assign_cells`, `select_member`. |
 | `pesa2/archive.rs` | External-archive maintenance: `insert_nondominated` and squeeze-factor `truncate`. |
-| `pesa2/engine.rs` | `evolutionary_phase`, the generational loop, plus archive seeding and child breeding. |
+| `pesa2/engine.rs` | `evolutionary_phase`, the generational loop, plus archive seeding and `breed`. |

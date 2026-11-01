@@ -58,6 +58,22 @@ Changes in behavior to watch for:
 
 ## Unreleased
 
+### Fixed
+
+- **Shi-MOCD breeds as its authors' implementation does.** Up to 6.1.0,
+  [`mocd_q`][pymocd.mocd_q] and [`mocd_d`][pymocd.mocd_d] applied `mut_rate`
+  to every gene, which at the paper's rate of 0.4 redraws 40% of every child
+  and keeps the search from converging. The breeding step now follows the C++
+  code that the first author links as the code of
+  [Shi et al. (2012)](https://doi.org/10.1016/j.asoc.2011.10.005): every child
+  copied from the archive is mutated once with a size-dependent number of
+  genes, then each variation step mutates one child with probability
+  `mut_rate` or crosses two children in place with probability `cross_rate`;
+  parents are drawn uniformly over the occupied cells of a 10 × 10 grid. On
+  the paper's four-group benchmark, MOCD-Q now identifies 0.98 of the
+  vertices correctly at $z_{\mathrm{out}} = 4$ (6.1.0: 0.80; paper: 1.0).
+  Partitions differ from those of 6.1.0 for the same inputs.
+
 ### Changed
 
 - **HP-MOCD runs the setting of its paper.** The defaults of

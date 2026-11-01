@@ -122,10 +122,12 @@ pub fn hpmocd_fronts_fn(py: Python<'_>, graph: &Bound<'_, PyAny>) -> PyResult<Py
 ///         and the children bred per generation. Also sets the archive
 ///         capacity to ``min(pop_size, 100)``.
 ///     num_gens: number of generations.
-///     cross_rate: probability that a child is the uniform crossover of two
-///         parents rather than a copy of one. Must lie in [0, 1].
-///     mut_rate: per-gene probability of redrawing the gene uniformly from the
-///         node's neighbours. Must lie in [0, 1].
+///     cross_rate: probability that a variation step which does not mutate
+///         applies uniform crossover to two children. Must lie in [0, 1].
+///     mut_rate: probability that a variation step mutates one child. Every
+///         child is also mutated once when copied from the archive; a
+///         mutation redraws a fixed, size-dependent number of genes (the
+///         authors' implementation). Must lie in [0, 1].
 ///
 /// Returns:
 ///     ``dict[node, community]``. Isolated nodes get community ``-1``.
@@ -176,10 +178,12 @@ pub fn mocd_q_fn(
 ///         and the children bred per generation. Also sets the archive
 ///         capacity to ``min(pop_size, 100)``.
 ///     num_gens: number of generations.
-///     cross_rate: probability that a child is the uniform crossover of two
-///         parents rather than a copy of one. Must lie in [0, 1].
-///     mut_rate: per-gene probability of redrawing the gene uniformly from the
-///         node's neighbours. Must lie in [0, 1].
+///     cross_rate: probability that a variation step which does not mutate
+///         applies uniform crossover to two children. Must lie in [0, 1].
+///     mut_rate: probability that a variation step mutates one child. Every
+///         child is also mutated once when copied from the archive; a
+///         mutation redraws a fixed, size-dependent number of genes (the
+///         authors' implementation). Must lie in [0, 1].
 ///     rand_networks: number of Erdős–Rényi control graphs (same nodes and
 ///         edge count as the input); each costs a full run with the same budget.
 ///

@@ -29,7 +29,7 @@ partition; the front itself is not exposed.
 | **Selection rule** | MOCD-Q: maximum $Q$ (Eq. 3.8). MOCD-D: maximum of the minimum distance to Erdős–Rényi control fronts (Eqs. 3.9–3.11) |
 | **Front accessor** | None; there is no `mocd_fronts` |
 | **Deterministic** | No: there is no seed parameter, and the random generator is seeded from the operating system (module README, *Determinism*) |
-| **Original code** | The first author's [publications page](http://www.shichuan.org/html/publications_ch.html) links a C++ archive, `MOGAForClustering28.zip`, as the code of this paper. This port was written from the paper text and has not been compared with that code |
+| **Original code** | The first author's [publications page](http://www.shichuan.org/html/publications_ch.html) links a C++ archive, `MOGAForClustering28.zip`, as the code of this paper. The port was written from the paper text. Its variation operators, parent selection and grid resolution, which the paper leaves open, follow that code (see [Divergences from the paper](#divergences-from-the-paper)) |
 | **Paper** | Shi et al. (2012), *Applied Soft Computing* 12(2):850–859 — [DOI](https://doi.org/10.1016/j.asoc.2011.10.005); the same publications page links an [article-in-press copy](http://www.shichuan.org/doc/11.pdf) |
 
 </div>
@@ -117,27 +117,36 @@ so far. The archive is both the result and the mating pool.
    offered to the archive, which is then truncated to its capacity.
 2. **Generations.** For each of the `num_gens` generations (stopping early if
    the archive is empty):
-    1. The archive is binned into a hyper-grid with 8 divisions per objective
-       (64 cells), each axis normalized to the range the archive currently
-       spans. The occupancy of a cell is its *squeeze factor*.
-    2. `pop_size` children are bred. With probability `cross_rate` a child is
-       the uniform crossover of two parents (each gene taken from either
-       parent with probability 1/2); otherwise it is a copy of one parent.
-       Every child is then mutated: each gene, with probability `mut_rate`, is
-       redrawn uniformly from the node's neighbors (which may return the same
-       neighbor).
+    1. The archive is binned into a hyper-grid with 10 divisions per
+       objective (100 cells), each axis normalized to the range the archive
+       currently spans. The occupancy of a cell is its *squeeze factor*.
+    2. `pop_size` children are bred as the authors' implementation breeds
+       them. Each child starts as a copy of an archive member chosen by
+       region-based selection (below) and is mutated once. A mutation redraws
+       a fixed number of genes, each uniformly from its node's neighbors
+       (which may return the same neighbor); the number depends only on the
+       node count $n$: $\lfloor n/2 \rfloor$ below 20 nodes,
+       $\lfloor n/3 \rfloor$ below 50, $\lfloor n/5 \rfloor$ below 100,
+       $\lfloor n/50 \rfloor$ below 1,000, $\lfloor n/200 \rfloor$ below
+       10,000 and $\lfloor n/1000 \rfloor$ above (11 genes on karate, 2 on a
+       128-node graph, 24 on the power grid). Then $\lceil P/2 \rceil$
+       variation steps follow, with $P$ = `pop_size`: with probability
+       `mut_rate` a step mutates one random child again; otherwise, with
+       probability `cross_rate`, it applies uniform crossover to two distinct
+       random children in place, swapping each gene between them with
+       probability 1/2, so that both offspring are kept.
     3. Each child is evaluated and offered to the archive. It is rejected only
        if an archive member dominates it; archive members it dominates are
        removed.
     4. If the archive exceeds its capacity, it is truncated.
 3. **Result.** The final archive is the Pareto front.
 
-**Region-based selection.** Parents are chosen by PESA-II's region-based
-tournament: two occupied cells are drawn, the one with the lower squeeze
-factor wins (ties by a coin flip), and a member is drawn uniformly from inside
-the winning cell. The module README stresses that the tournament is over cells,
-not members: a cell with one member beats a cell with twenty, which spreads the
-archive along the front.
+**Region-based selection.** Parents are chosen as in the authors'
+implementation: a uniformly random occupied cell, then a uniformly random
+member of it. Selection is over cells, not members: a cell with one member is
+drawn as often as a cell with twenty, which spreads the parents along the
+front. (Corne et al. (2001) instead hold a binary tournament between two
+occupied cells on their squeeze factors.)
 
 **Truncation.** While the archive is over capacity, a most crowded cell is
 chosen (ties uniformly at random), a uniformly random member of it is removed,
@@ -209,15 +218,15 @@ One table covers both functions; `rand_networks` belongs to `mocd_d` only.
 |---|---|---|
 | `pop_size` | `100` | PESA-II internal population size: the number of random genomes in the seed population and of children bred per generation. Also sets the archive capacity to `min(pop_size, 100)`. Values below 1 are raised to 1. |
 | `num_gens` | `100` | Number of generations. `0` returns a selection from the seeded archive. |
-| `cross_rate` | `0.9` | Probability that a child is the uniform crossover of two parents rather than a copy of one. Must lie in $[0, 1]$. Shi et al. use `0.6`. |
-| `mut_rate` | `0.1` | Per-gene probability of redrawing the gene uniformly from the node's neighbors. Must lie in $[0, 1]$. Shi et al. use `0.4`. |
+| `cross_rate` | `0.9` | Probability that a variation step that does not mutate applies uniform crossover to two random children. Must lie in $[0, 1]$. Shi et al. use `0.6`. |
+| `mut_rate` | `0.1` | Probability that a variation step mutates one random child, on top of the mutation every child receives when it is copied from the archive. A step does nothing with probability $\max(0, 1 - \texttt{cross\_rate} - \texttt{mut\_rate})$. Must lie in $[0, 1]$. Shi et al. use `0.4`. |
 | `rand_networks` | `3` | `mocd_d` only. Number of Erdős–Rényi control graphs; each one costs a full evolutionary run with the same budget. The module README attributes the value 3 to Shi §3.2, which uses three control fronts for the artificial networks (and one for the timed real-network runs). |
 
 The archive capacity (`epsize` in PESA-II) is not a parameter: it is derived
 as `min(pop_size, 100)` with a floor of 1. The module README states that the
 cap of 100 encodes the largest archive in Shi's Table 1, and that the archive
 of 200 used in the paper's §4.1.2 cannot be reached through the public API.
-The number of grid divisions per objective is fixed at 8.
+The number of grid divisions per objective is fixed at 10.
 
 The `cross_rate` and `mut_rate` defaults differ from the paper; see the
 warning at the top of this page.
@@ -276,14 +285,16 @@ one plus one per control graph, each with the same `pop_size` and `num_gens`.
 
 Below, $n$ and $m$ are the numbers of nodes and edges, $P$ is `pop_size`,
 $E = \min(P, 100)$ is the archive capacity, $G$ is `num_gens` and $r$ is
-`rand_networks`. The hyper-grid has a fixed 64 cells. File names are relative
+`rand_networks`. The hyper-grid has a fixed 100 cells. File names are relative
 to `src/core/algorithms/mocd/` unless given in full.
 
 **Time of this implementation.** One generation of `evolutionary_phase`
-(`pesa2/engine.rs`) breeds and evaluates $P$ children. Breeding a child
-(`breed_child`) runs `uniform_crossover` and `mutate` (`operators.rs`) over
-all $n$ genes, and each of its one or two parent draws (`squeeze_tournament`,
-`pesa2/grid.rs`) scans the archive, so it costs $O(n + E)$. Evaluating it
+(`pesa2/engine.rs`) breeds and evaluates $P$ children. Breeding them
+(`breed`) copies $P$ archive members, each found by one draw
+(`select_member`, `pesa2/grid.rs`) that scans the archive, and runs at most
+$\lceil P/2 \rceil$ crossovers over all $n$ genes; mutations
+(`operators.rs`) redraw at most $n/2$ genes each. One child costs
+$O(n + E)$. Evaluating it
 (`evaluate`, `pesa2/solution.rs`) decodes the genome with a union-find over
 the $n$ links (`decode`, `locus.rs`) and computes both objectives by visiting
 every node and both directions of every edge (`calculate_objectives`,
@@ -389,11 +400,34 @@ The port was written from the paper text, not from the authors' code (see the
 *Original code* row at the top of this page), and the module README lists the
 following as deliberate readings of, or departures from, that text:
 
+- **Variation operators from the authors' code.** The paper describes
+  mutation only as "randomly select some genes and assign them with other
+  randomly selected adjacent nodes" and calls $p_m$ "the ratio of mutation".
+  Up to 6.1.0 the port read $p_m$ as a per-gene probability, which at the
+  paper's $p_m = 0.4$ redraws 40% of every child and keeps the search from
+  converging. The breeding step now follows the authors' C++ implementation
+  (see *Original code*): the number of genes a mutation redraws, the copy and
+  mutate step, the order of the mutation and crossover steps, uniform
+  selection over occupied cells and a 10 × 10 grid. On the paper's
+  four-group benchmark (§4.2.1: 128 nodes, $z_{\mathrm{in}} +
+  z_{\mathrm{out}} = 16$; `mocd_q` with $p_c = 0.6$, $p_m = 0.4$,
+  `pop_size=100`, `num_gens=200`; 50 graphs per point), the mean fraction of
+  vertices identified correctly rose from 0.80 to 0.98 at
+  $z_{\mathrm{out}} = 4$ and from 0.70 to 0.92 at $z_{\mathrm{out}} = 5$,
+  where the paper reports 1.0. On the hierarchical network of §4.1.1, the
+  maximum-$Q$ member rose from $Q = 0.634$ to $0.696$ (paper: $0.706$ with
+  four communities; mean over 10 graphs).
 - **Uniform crossover.** Shi names the operator "uniform two-point crossover"
-  but describes it as an independent per-gene choice between the two parents.
-  The port follows the description, which is uniform crossover, not
-  two-segment crossover. A gene inherited at its own position is valid in
-  either parent, so either reading keeps genomes valid.
+  but describes it as an independent per-gene choice between the two parents,
+  and the authors' code implements uniform crossover. A gene inherited at its
+  own position is valid in either parent, so genomes stay valid.
+- **PESA-II's archive, not the authors' archive update.** The authors' code
+  rejects a candidate only if a member is better in both objectives and, when
+  the archive is full, lets a candidate replace a member of a more crowded
+  cell. The port keeps the archive of Corne et al. (2001): a candidate is
+  rejected if a member dominates it, and an overfull archive is truncated
+  from its most crowded cell. On the benchmark above the two archives gave
+  the same accuracy.
 - **Union-find decoding** instead of the paper's backtracking. The connected
   components, and therefore the partition, are the same.
 - **Erdős–Rényi $G(n, m)$ null model.** MOCD-D's control graphs are uniformly
