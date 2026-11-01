@@ -59,9 +59,8 @@ details matter when you combine a detector with its accessor:
   ([below](#by-maximum-modularity)).
 - **HP-MOCD's budget.** [`hpmocd`][pymocd.hpmocd] and
   [`hpmocd_fronts`][pymocd.hpmocd_fronts] take only the graph and run with the
-  module's fixed defaults (`cross_rate=0.7`, `mut_rate=0.5`), which differ from
-  the crossover and mutation probabilities of the paper's experiments (0.8 and
-  0.2; see [HP-MOCD](../algorithms/hpmocd.md)). To change the budget, or to read
+  setting of the paper's experiments (`cross_rate=0.8`, `mut_rate=0.2`; see
+  [HP-MOCD](../algorithms/hpmocd.md)). To change the budget, or to read
   each member's objective values, use the [`HpMocd`][pymocd.HpMocd] class
   ([below](#objective-values-with-hpmocd)).
 

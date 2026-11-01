@@ -25,11 +25,10 @@ use pyo3_stub_gen::derive::gen_stub_pyfunction;
 /// Run HP-MOCD (NSGA-II over Shi's intra/inter objectives) and return the
 /// max-modularity member of its rank-1 front.
 ///
-/// Runs with the module's fixed defaults (pop_size=100, num_gens=100,
-/// cross_rate=0.7, mut_rate=0.5). The paper's experiments used cross_rate=0.8
-/// and mut_rate=0.2, which ``HpMocd(graph, cross_rate=0.8, mut_rate=0.2)``
-/// reproduces. The search is not seeded, so two calls can return different
-/// partitions.
+/// Runs with the settings of the paper's experiments (pop_size=100,
+/// num_gens=100, cross_rate=0.8, mut_rate=0.2; Santos et al. 2025, Sec. 5.1).
+/// To change them, use the ``HpMocd`` class. The search is not seeded, so two
+/// calls can return different partitions.
 ///
 /// Args:
 ///     graph: networkx.Graph or igraph.Graph with integer node ids; edges are
@@ -67,9 +66,9 @@ pub fn hpmocd_fn(py: Python<'_>, graph: &Bound<'_, PyAny>) -> PyResult<Partition
 /// and it is not deduplicated: the same partition can appear more than once. Each
 /// call is a new, unseeded search, independent of any ``hpmocd`` call.
 ///
-/// Runs with the same fixed defaults as ``hpmocd`` (pop_size=100,
-/// num_gens=100, cross_rate=0.7, mut_rate=0.5); the paper's experiments used
-/// cross_rate=0.8 and mut_rate=0.2. To change the budget, or to read each
+/// Runs with the same settings as ``hpmocd``, those of the paper's experiments
+/// (pop_size=100, num_gens=100, cross_rate=0.8, mut_rate=0.2). To change the
+/// budget, or to read each
 /// member's objective values, use the ``HpMocd`` class: its
 /// ``generate_pareto_front`` returns ``[(partition, objectives), ...]``.
 ///

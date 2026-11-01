@@ -145,18 +145,17 @@ budget, or to supply your own objectives, construct [`HpMocd`][pymocd.HpMocd]:
 | `debug_level` | `0` | `0` is silent; `1` or more prints two lines when the object is constructed (the debug level and a graph summary) and logs every 10th generation and the last. The lines are written by Rust to the process's standard output, bypassing `sys.stdout`. |
 | `pop_size` | `100` | NSGA-II population size $N$. Must be at least `4` (see [Implementation notes](#implementation-notes)). |
 | `num_gens` | `100` | Number of generations. |
-| `cross_rate` | `0.7` | Probability that a child is the ensemble crossover of its four parents rather than a copy of one. Must lie in $[0, 1]$. |
-| `mut_rate` | `0.5` | Per-node probability of a neighbour-majority move. Must lie in $[0, 1]$. |
+| `cross_rate` | `0.8` | Probability that a child is the ensemble crossover of its four parents rather than a copy of one. Must lie in $[0, 1]$. |
+| `mut_rate` | `0.2` | Per-node probability of a neighbour-majority move. Must lie in $[0, 1]$. |
 | `objectives` | `None` | List of Python callables `(graph, partition) -> float`, all minimised. A non-empty list replaces the built-in `intra`/`inter` pair. |
 
 !!! note "Defaults and the paper's experimental setting"
     The paper (Santos et al., 2025, Sec. 5.1 and Table 1) reports, for its
     experiments, 100 generations, a population of 100, four parents per
     crossover, a crossover probability of 0.8 and a mutation probability of
-    0.2. The shipped `pop_size` and `num_gens` defaults match; the shipped
-    `cross_rate` and `mut_rate` defaults are 0.7 and 0.5. To run the paper's
-    setting, pass the two rates:
-    `pymocd.HpMocd(G, cross_rate=0.8, mut_rate=0.2)`. The arXiv preprint
+    0.2. The defaults are this setting. Versions up to 6.1.0 shipped
+    `cross_rate=0.7` and `mut_rate=0.5`; pass those two rates to reproduce
+    results obtained with them. The arXiv preprint
     ([arXiv:2506.01752](https://arxiv.org/abs/2506.01752)) reports the same
     setting.
 
@@ -281,8 +280,8 @@ import pymocd
 G = nx.karate_club_graph()
 print("hpmocd:", len(set(pymocd.hpmocd(G).values())), "communities")
 
-paper = pymocd.HpMocd(G, cross_rate=0.8, mut_rate=0.2).run()   # Santos et al. (2025), Sec. 5.1
-print("paper's setting:", len(set(paper.values())), "communities")
+old = pymocd.HpMocd(G, cross_rate=0.7, mut_rate=0.5).run()   # defaults up to 6.1.0
+print("6.1.0 rates:", len(set(old.values())), "communities")
 
 model = pymocd.HpMocd(G, pop_size=40, num_gens=30)   # smaller budget than the default
 front = model.generate_pareto_front()                # [(partition, [intra, inter]), ...]

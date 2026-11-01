@@ -126,14 +126,10 @@ returns the member of the rank-1 front with the highest $Q$. It was published
 by [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7).
 
 [`hpmocd`][pymocd.hpmocd] and [`hpmocd_fronts`][pymocd.hpmocd_fronts] take the
-graph and nothing else. They run with fixed defaults (`pop_size=100`,
-`num_gens=100`, `cross_rate=0.7`, `mut_rate=0.5`). The population and
-generation counts match the paper's experiments, but the paper used a
-crossover probability of 0.8 and a mutation probability of 0.2
-(Santos et al., 2025, Sec. 5.1 and Table 1);
-`HpMocd(G, cross_rate=0.8, mut_rate=0.2).run()` runs that setting. The
-[HP-MOCD page](hpmocd.md#parameters) compares the defaults with the paper's
-setting. The [`HpMocd`][pymocd.HpMocd] class exposes the same search with a tunable budget,
+graph and nothing else. They run with the setting of the paper's experiments
+(`pop_size=100`, `num_gens=100`, `cross_rate=0.8`, `mut_rate=0.2`;
+Santos et al., 2025, Sec. 5.1 and Table 1). The
+[HP-MOCD page](hpmocd.md#parameters) lists the parameters. The [`HpMocd`][pymocd.HpMocd] class exposes the same search with a tunable budget,
 a per-generation callback, the objective values of every front member, and
 user-supplied Python objective functions. HP-MOCD is not deterministic and has
 no seed parameter. See the [HP-MOCD page](hpmocd.md) for details.

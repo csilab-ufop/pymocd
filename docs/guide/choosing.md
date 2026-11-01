@@ -25,9 +25,8 @@ and selection rules, see the [Algorithms overview](../algorithms/index.md).
        [`HpMocd`][pymocd.HpMocd] class with `objectives=[...]`.
     3. **Do you need HP-MOCD
        ([Santos et al., 2025](https://doi.org/10.1007/s13278-025-01519-7))?**
-       Use [`hpmocd`][pymocd.hpmocd], or
-       `HpMocd(G, cross_rate=0.8, mut_rate=0.2).run()` for the paper's
-       experimental setting.
+       Use [`hpmocd`][pymocd.hpmocd], which runs the paper's experimental
+       setting.
     4. **Otherwise**, use [`rimpso`][pymocd.rimpso].
         - To see the partitions at every resolution, use
           [`rimpso_fronts`][pymocd.rimpso_fronts].
@@ -42,7 +41,7 @@ and selection rules, see the [Algorithms overview](../algorithms/index.md).
 | One partition, with no resolution or community count to set | [`rimpso`][pymocd.rimpso] | recommended default; label-free selection with no parameter |
 | The partitions at every resolution | [`rimpso_fronts`][pymocd.rimpso_fronts] | RIMPSO's Pareto front is the graph's resolution profile |
 | The same output on every call, and independent runs on request | [`rimpso`][pymocd.rimpso] with `seed` | the only detector with a `seed` argument; deterministic at any thread count for a fixed node and edge order |
-| HP-MOCD at the library's fixed defaults | [`hpmocd`][pymocd.hpmocd] | `pop_size` and `num_gens` match the paper (100/100); `cross_rate=0.7` and `mut_rate=0.5` differ from its CP = 0.8, MP = 0.2 (Sec. 5.1, Table 1), which [`HpMocd`][pymocd.HpMocd] accepts; maximum-modularity selection |
+| HP-MOCD at the paper's setting | [`hpmocd`][pymocd.hpmocd] | `pop_size=100`, `num_gens=100`, `cross_rate=0.8`, `mut_rate=0.2`, as in the paper (Sec. 5.1, Table 1); [`HpMocd`][pymocd.HpMocd] takes other values; maximum-modularity selection |
 | HP-MOCD with another budget, per-member objective values, or a progress callback | [`HpMocd`][pymocd.HpMocd] | tunable constructor, `generate_pareto_front`, `set_on_generation` |
 | Objective functions of your own | [`HpMocd`][pymocd.HpMocd] with `objectives=[...]` | Python callables replace the built-in objective pair |
 | A baseline paper's best-in-front numbers | [`ccm_fronts`][pymocd.ccm_fronts], [`krm_fronts`][pymocd.krm_fronts], [`moga_net_fronts`][pymocd.moga_net_fronts], [`mmcomo_fronts`][pymocd.mmcomo_fronts] | those papers report the best member of the front |
@@ -93,13 +92,10 @@ gives the figures the README reports.
 [`hpmocd`][pymocd.hpmocd] runs HP-MOCD, published by
 [Santos et al. (2025)](https://doi.org/10.1007/s13278-025-01519-7), with fixed
 defaults, and returns the member of the rank-1 front with the highest
-modularity. It takes the graph and nothing else. The defaults (`pop_size=100`,
-`num_gens=100`, `cross_rate=0.7`, `mut_rate=0.5`) match the population and
-generation counts of the paper's experiments, but the paper used a crossover
-probability of 0.8 and a mutation probability of 0.2 (Sec. 5.1 and Table 1);
-`HpMocd(G, cross_rate=0.8, mut_rate=0.2).run()` runs that setting. The
-[HP-MOCD page](../algorithms/hpmocd.md#parameters) lists the defaults and
-compares them with the paper's setting.
+modularity. It takes the graph and nothing else. Its defaults (`pop_size=100`,
+`num_gens=100`, `cross_rate=0.8`, `mut_rate=0.2`) are the setting of the
+paper's experiments (Sec. 5.1 and Table 1). The
+[HP-MOCD page](../algorithms/hpmocd.md#parameters) lists them.
 [`hpmocd_fronts`][pymocd.hpmocd_fronts] runs the same configuration and returns
 the whole rank-1 front instead.
 

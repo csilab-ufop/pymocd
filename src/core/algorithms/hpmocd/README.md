@@ -86,9 +86,12 @@ on the way out, renumbering the surviving communities from `0`.
 | `debug_level` | `0` | `0` silent; `≥1` prints the graph once and logs every 10th generation and the last. |
 | `pop_size` | `100` | NSGA-II population size. Must be `≥ 4` (see *Divergences*). |
 | `num_gens` | `100` | Generations. |
-| `cross_rate` | `0.7` | Probability a child is an ensemble crossover rather than a parent clone. Must be in `[0, 1]`. |
-| `mut_rate` | `0.5` | Per-node probability of a neighbour-majority move. Must be in `[0, 1]`. |
+| `cross_rate` | `0.8` | Probability a child is an ensemble crossover rather than a parent clone. Must be in `[0, 1]`. |
+| `mut_rate` | `0.2` | Per-node probability of a neighbour-majority move. Must be in `[0, 1]`. |
 | `objectives` | `None` | List of Python callables `(graph, partition_dict) -> float`, all minimised. Non-empty replaces the built-in `intra`/`inter` pair. Also settable after construction with `set_objectives`; an empty list reverts. |
+
+The `cross_rate` and `mut_rate` defaults are the paper's C_P = 0.8 and M_P = 0.2
+(Sec. 5.1 and Table 1). Versions up to 6.1.0 shipped 0.7 and 0.5.
 
 `set_on_generation(cb)` registers `cb(generation, num_gens, front_size)`, called
 once per generation after the offspring are merged; `None` clears it.
